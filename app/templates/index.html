@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">欢迎使用安全管理系统</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    系统简介
+                </div>
+                <div class="card-body">
+                    <p class="card-text">这是一个安全数据管理系统，集成了CISA、CVE和NESSUS等多种安全数据源的信息展示和管理功能。</p>
+                    <p class="card-text">请使用左侧导航栏选择不同的功能模块。</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    快速访问
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{{ url_for('cisa.cisa_index') }}">CISA 数据管理</a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{{ url_for('cve.cve_index') }}">CVE 漏洞管理</a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{{ url_for('nessus.nessus_index') }}">NESSUS 扫描结果</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
