@@ -12,12 +12,16 @@ def cisa_index():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     
+    # 获取排序参数
+    sort_by = request.args.get('sort_by', '')
+    sort_order = request.args.get('sort_order', '')
+    
     # 获取数据
     if search_query:
-        pagination = CisaService.search_data(search_query, page=page, per_page=per_page)
+        pagination = CisaService.search_data(search_query, page=page, per_page=per_page, sort_by=sort_by, sort_order=sort_order)
         total_count = CisaService.get_search_count(search_query)
     else:
-        pagination = CisaService.get_all_data(page=page, per_page=per_page)
+        pagination = CisaService.get_all_data(page=page, per_page=per_page, sort_by=sort_by, sort_order=sort_order)
         total_count = CisaService.get_total_count()
     
     # 可用的每页显示条数选项
@@ -30,7 +34,9 @@ def cisa_index():
         pagination=pagination,
         total_count=total_count,
         per_page=per_page,
-        per_page_options=per_page_options
+        per_page_options=per_page_options,
+        sort_by=sort_by,
+        sort_order=sort_order
     )
 
 @cisa_bp.route('/sync')
@@ -60,12 +66,16 @@ def api_data():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     
+    # 获取排序参数
+    sort_by = request.args.get('sort_by', '')
+    sort_order = request.args.get('sort_order', '')
+    
     # 获取数据
     if search_query:
-        pagination = CisaService.search_data(search_query, page=page, per_page=per_page)
+        pagination = CisaService.search_data(search_query, page=page, per_page=per_page, sort_by=sort_by, sort_order=sort_order)
         total_count = CisaService.get_search_count(search_query)
     else:
-        pagination = CisaService.get_all_data(page=page, per_page=per_page)
+        pagination = CisaService.get_all_data(page=page, per_page=per_page, sort_by=sort_by, sort_order=sort_order)
         total_count = CisaService.get_total_count()
     
     # 转换为JSON格式

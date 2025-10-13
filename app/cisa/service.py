@@ -196,20 +196,44 @@ class CisaService:
         return None
     
     @staticmethod
-    def get_all_data(page=1, per_page=20):
-        """从数据库获取所有CISA数据，支持分页"""
-        return CisaData.query.order_by(CisaData.date_added.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    def get_all_data(page=1, per_page=20, sort_by='', sort_order=''):
+        """从数据库获取所有CISA数据，支持分页和排序"""
+        query = CisaData.query
+        
+        # 添加排序
+        if sort_by == 'date_added':
+            if sort_order == 'asc':
+                query = query.order_by(CisaData.date_added.asc())
+            else:
+                query = query.order_by(CisaData.date_added.desc())
+        else:
+            # 默认按日期降序排序
+            query = query.order_by(CisaData.date_added.desc())
+        
+        return query.paginate(page=page, per_page=per_page, error_out=False)
     
     @staticmethod
-    def search_data(query, page=1, per_page=20):
-        """根据查询条件搜索CISA数据，支持分页"""
+    def search_data(query, page=1, per_page=20, sort_by='', sort_order=''):
+        """根据查询条件搜索CISA数据，支持分页和排序"""
         search = f"%{query}%"
-        return CisaData.query.filter(
+        query = CisaData.query.filter(
             CisaData.vendor_project.like(search) | 
             CisaData.product.like(search) |
             CisaData.vulnerability_name.like(search) |
             CisaData.cve_id.like(search)
-        ).order_by(CisaData.date_added.desc()).paginate(page=page, per_page=per_page, error_out=False)
+        )
+        
+        # 添加排序
+        if sort_by == 'date_added':
+            if sort_order == 'asc':
+                query = query.order_by(CisaData.date_added.asc())
+            else:
+                query = query.order_by(CisaData.date_added.desc())
+        else:
+            # 默认按日期降序排序
+            query = query.order_by(CisaData.date_added.desc())
+        
+        return query.paginate(page=page, per_page=per_page, error_out=False)
     
     @staticmethod
     def get_total_count():

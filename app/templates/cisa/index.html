@@ -52,7 +52,7 @@
                     <th>厂商/项目</th>
                     <th>产品</th>
                     <th>漏洞名称</th>
-                    <th>添加日期</th>
+                    <th><a href="{{ url_for('cisa.cisa_index', search=search_query, page=page, per_page=per_page, sort_by='date_added', sort_order='asc' if sort_by == 'date_added' and sort_order == 'desc' else 'desc') }}">添加日期 {% if sort_by == 'date_added' %}{{ '↓' if sort_order == 'desc' else '↑' }}{% endif %}</a></th>
                     <th>CVE ID</th>
                     <th>截止日期</th>
                 </tr>
@@ -115,6 +115,8 @@
         var currentSearch = '{{ search_query }}';
         var currentPage = {{ pagination.page if pagination else 1 }};
         var currentPerPage = {{ per_page }};
+        var currentSortBy = '{{ sort_by or '' }}';
+        var currentSortOrder = '{{ sort_order or '' }}';
         
         // 更新表格数据的函数
         function updateTableData() {
@@ -124,6 +126,12 @@
             
             if (currentSearch) {
                 queryParams.append('search', currentSearch);
+            }
+            if (currentSortBy) {
+                queryParams.append('sort_by', currentSortBy);
+            }
+            if (currentSortOrder) {
+                queryParams.append('sort_order', currentSortOrder);
             }
             queryParams.append('page', currentPage);
             queryParams.append('per_page', currentPerPage);
@@ -189,6 +197,23 @@
             var form = document.getElementById('search-form');
             form.querySelector('input[name="per_page"]').value = currentPerPage;
             form.querySelector('input[name="page"]').value = currentPage;
+            // 添加排序参数
+            var sortByInput = form.querySelector('input[name="sort_by"]');
+            var sortOrderInput = form.querySelector('input[name="sort_order"]');
+            if (!sortByInput) {
+                sortByInput = document.createElement('input');
+                sortByInput.type = 'hidden';
+                sortByInput.name = 'sort_by';
+                form.appendChild(sortByInput);
+            }
+            if (!sortOrderInput) {
+                sortOrderInput = document.createElement('input');
+                sortOrderInput.type = 'hidden';
+                sortOrderInput.name = 'sort_order';
+                form.appendChild(sortOrderInput);
+            }
+            sortByInput.value = currentSortBy;
+            sortOrderInput.value = currentSortOrder;
             form.submit();
         });
         
