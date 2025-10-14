@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">NVD 漏洞数据库</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group mr-2">
+                <button class="btn btn-sm btn-outline-secondary" id="sync-data-btn">手动同步数据</button>
+            </div>
+            <div class="btn-group mr-2">
+                <button class="btn btn-sm btn-outline-secondary" id="view-logs-btn">查看同步日志</button>
+            </div>
+            <div class="btn-group">
+                <span id="last-update" class="btn btn-sm btn-outline-info disabled">最后更新: 加载中...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日期范围选择器，默认隐藏 -->
+    <div id="date-range-form" class="mb-4 p-3 border rounded bg-light hidden">
+        <div class="row">
+            <div class="col-md-5">
+                <label for="start_date" class="form-label">开始日期:</label>
+                <input type="date" id="start_date" class="form-control" max="{{ today }}">
+            </div>
+            <div class="col-md-5">
+                <label for="end_date" class="form-label">结束日期:</label>
+                <input type="date" id="end_date" class="form-control" max="{{ today }}">
+            </div>
+            <div class="col-md-2" style="display: flex; align-items: flex-end;">
+                <button id="confirm-sync-btn" class="btn btn-primary btn-sm w-100">确认同步</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日志查看模态框 -->
+    <div class="modal fade" id="logs-modal" tabindex="-1" role="dialog" aria-labelledby="logs-modal-label" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="logs-modal-label">同步日志</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="logs-content" class="pre-wrap" style="max-height: 500px; overflow-y: auto;">
+                        加载日志中...
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜索框和分页选项 -->
+    <div class="mb-4">
+        <form id="search-form" method="get" action="{{ url_for('nvd.nvd_index') }}">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ per_page }}">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="搜索CVE ID、描述、厂商或产品" name="search" value="{{ search_query }}">
+                <div class="input-group-append">
+                    <button class="btn btn-primary" type="submit">搜索</button>
+                </div>
+            </div>
+        </form>
+        
+        <!-- 每页显示条数选择器 -->
+        <div class="mt-2 d-flex justify-content-between align-items-center">
+            <div>
+                <label for="per_page" class="mr-2">每页显示:</label>
+                <select id="per_page" class="form-control-sm">
+                    {% for option in per_page_options %}
+                        <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="text-muted">
+                共 {{ total_count }} 条记录
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="table-responsive">
+        <table id="nvd-data-table" class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>CVE ID</th>
+                    <th><a href="{{ url_for('nvd.nvd_index', search=search_query, page=page, per_page=per_page, sort_by='published_date', sort_order='asc' if sort_by == 'published_date' and sort_order == 'desc' else 'desc') }}">发布日期 {% if sort_by == 'published_date' %}{{ '↓' if sort_order == 'desc' else '↑' }}{% endif %}</a></th>
+                    <th><a href="{{ url_for('nvd.nvd_index', search=search_query, page=page, per_page=per_page, sort_by='last_modified_date', sort_order='asc' if sort_by == 'last_modified_date' and sort_order == 'desc' else 'desc') }}">更新日期 {% if sort_by == 'last_modified_date' %}{{ '↓' if sort_order == 'desc' else '↑' }}{% endif %}</a></th>
+                    <th>描述</th>
+                    <th><a href="{{ url_for('nvd.nvd_index', search=search_query, page=page, per_page=per_page, sort_by='base_score', sort_order='asc' if sort_by == 'base_score' and sort_order == 'desc' else 'desc') }}">评分 {% if sort_by == 'base_score' %}{{ '↓' if sort_order == 'desc' else '↑' }}{% endif %}</a></th>
+                    <th>严重程度</th>
+                    <th>向量字符串</th>
+                    <th>厂商</th>
+                    <th>产品</th>
+                </tr>
+            </thead>
+            <tbody id="nvd-data-body">
+                {% if data %}
+                    {% for item in data %}
+                        <tr>
+                            <td>{{ item.cve_id }}</td>
+                            <td>{{ item.published_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ item.last_modified_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ item.description[:100] }}{% if item.description|length > 100 %}...{% endif %}</td>
+                            <td>{{ item.base_score if item.base_score else '-' }}</td>
+                            <td>
+                                {% if item.base_severity %}
+                                    <span class="badge {% if item.base_severity == 'CRITICAL' %}bg-danger{% elif item.base_severity == 'HIGH' %}bg-warning text-dark{% elif item.base_severity == 'MEDIUM' %}bg-primary{% elif item.base_severity == 'LOW' %}bg-secondary{% else %}bg-info{% endif %}">
+                                        {{ item.base_severity }}
+                                    </span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ item.vector_string[:30] }}{% if item.vector_string|length > 30 %}...{% endif %}</td>
+                            <td>{{ item.vendor or '-' }}</td>
+                            <td>{{ item.product or '-' }}</td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center">暂无数据，请点击"手动同步数据"按钮获取数据</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 分页导航 -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="mt-4 d-flex justify-content-center">
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('nvd.nvd_index', search=search_query, page=pagination.prev_num, per_page=per_page) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                
+                {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('nvd.nvd_index', search=search_query, page=page_num, per_page=per_page) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('nvd.nvd_index', search=search_query, page=pagination.next_num, per_page=per_page) }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+
+    <!-- JavaScript -->
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置默认日期为最近7天
+            const today = new Date();
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(today.getDate() - 7);
+            
+            document.getElementById('start_date').valueAsDate = sevenDaysAgo;
+            document.getElementById('end_date').valueAsDate = today;
+            
+            // 每页显示条数变更处理
+            document.getElementById('per_page').addEventListener('change', function() {
+                const per_page = this.value;
+                const search_form = document.getElementById('search-form');
+                const per_page_input = search_form.querySelector('input[name="per_page"]');
+                per_page_input.value = per_page;
+                search_form.submit();
+            });
+            
+            // 标记最后更新时间
+            updateLastUpdateTime();
+            
+            // 手动同步数据按钮点击事件
+            document.getElementById('sync-data-btn').addEventListener('click', function() {
+                const dateRangeForm = document.getElementById('date-range-form');
+                dateRangeForm.classList.toggle('hidden');
+            });
+            
+            // 确认同步按钮点击事件
+            document.getElementById('confirm-sync-btn').addEventListener('click', function() {
+                const startDate = document.getElementById('start_date').value;
+                const endDate = document.getElementById('end_date').value;
+                
+                if (startDate && endDate) {
+                    // 显示加载状态
+                    document.getElementById('last-update').textContent = '正在同步数据...';
+                    
+                    // 执行同步
+                    window.location.href = `{{ url_for('nvd.sync_data') }}?start_date=${startDate}&end_date=${endDate}`;
+                } else {
+                    alert('请选择有效的日期范围');
+                }
+            });
+            
+            // 查看日志按钮点击事件
+            document.getElementById('view-logs-btn').addEventListener('click', function() {
+                const logsModal = new bootstrap.Modal(document.getElementById('logs-modal'));
+                logsModal.show();
+                
+                // 加载日志内容
+                loadLogs();
+            });
+            
+            // 每10秒自动更新数据
+            setInterval(function() {
+                // 更新最后更新时间显示
+                updateLastUpdateTime();
+                
+                // 只有在首页时才自动刷新数据，避免分页后也刷新
+                if (window.location.href.includes('page=1') || !window.location.href.includes('page=')) {
+                    // 刷新表格数据
+                    refreshTableData();
+                }
+            }, 10000);
+        });
+        
+        // 更新最后更新时间显示
+        function updateLastUpdateTime() {
+            const lastUpdateElement = document.getElementById('last-update');
+            const now = new Date();
+            lastUpdateElement.textContent = `最后更新: ${now.toLocaleString()}`;
+        }
+        
+        // 刷新表格数据
+        function refreshTableData() {
+            // 这里应该通过AJAX请求获取最新数据，然后更新表格内容
+            console.log('刷新数据：', new Date().toLocaleString());
+            
+            // 实际应用中应该调用API获取数据，然后更新表格
+            // 获取当前的搜索参数
+            const searchParams = new URLSearchParams(window.location.search);
+            const searchQuery = searchParams.get('search') || '';
+            const page = searchParams.get('page') || 1;
+            const perPage = searchParams.get('per_page') || 20;
+            const sortBy = searchParams.get('sort_by') || 'published_date';
+            const sortOrder = searchParams.get('sort_order') || 'desc';
+            
+            // 构建API请求URL
+            const apiUrl = new URL('{{ url_for('nvd.api_data', _external=True) }}');
+            apiUrl.searchParams.append('search', searchQuery);
+            apiUrl.searchParams.append('page', page);
+            apiUrl.searchParams.append('per_page', perPage);
+            apiUrl.searchParams.append('sort_by', sortBy);
+            apiUrl.searchParams.append('sort_order', sortOrder);
+            
+            // 发送请求获取数据
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    // 更新表格内容
+                    updateTableContent(data.data);
+                })
+                .catch(error => {
+                    console.error('获取数据失败:', error);
+                });
+        }
+        
+        // 更新表格内容
+        function updateTableContent(data) {
+            const tableBody = document.getElementById('nvd-data-body');
+            
+            if (data && data.length > 0) {
+                // 清空表格
+                tableBody.innerHTML = '';
+                
+                // 添加新数据行
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    
+                    // 构建严重性标签
+                    let severityBadge = '-';
+                    if (item.base_severity) {
+                        let badgeClass = '';
+                        switch (item.base_severity) {
+                            case 'CRITICAL': badgeClass = 'bg-danger'; break;
+                            case 'HIGH': badgeClass = 'bg-warning text-dark'; break;
+                            case 'MEDIUM': badgeClass = 'bg-primary'; break;
+                            case 'LOW': badgeClass = 'bg-secondary'; break;
+                            default: badgeClass = 'bg-info'; break;
+                        }
+                        severityBadge = `<span class="badge ${badgeClass}">${item.base_severity}</span>`;
+                    }
+                    
+                    // 设置行内容
+                    row.innerHTML = 
+                        `<td>${item.cve_id}</td>
+                        <td>${item.published_date}</td>
+                        <td>${item.last_modified_date}</td>
+                        <td>${item.description.substring(0, 100)}${item.description.length > 100 ? '...' : ''}</td>
+                        <td>${item.base_score || '-'}</td>
+                        <td>${severityBadge}</td>
+                        <td>${item.vector_string ? item.vector_string.substring(0, 30) + (item.vector_string.length > 30 ? '...' : '') : '-'}</td>
+                        <td>${item.vendor || '-'}</td>
+                        <td>${item.product || '-'}</td>`;
+                    
+                    tableBody.appendChild(row);
+                });
+            }
+        }
+        
+        // 加载同步日志
+        function loadLogs() {
+            const logsContent = document.getElementById('logs-content');
+            logsContent.textContent = '加载日志中...';
+            
+            // 从服务器获取日志内容
+            fetch('{{ url_for('nvd.api_logs', _external=True) }}')
+                .then(response => response.json())
+                .then(logs => {
+                    if (logs.length > 0) {
+                        let logsText = '';
+                        logs.forEach(log => {
+                            const actionType = log.action_type === 'auto' ? '自动同步' : '手动同步';
+                            const dateRange = log.start_date && log.end_date 
+                                ? ' (' + log.start_date + ' 至 ' + log.end_date + ')' 
+                                : '';
+                            logsText += log.timestamp + ' - ' + actionType + '完成，新增 ' + log.count + ' 条记录' + dateRange + '\n';
+                        });
+                        logsContent.textContent = logsText.trim();
+                    } else {
+                        logsContent.textContent = '暂无同步日志';
+                    }
+                })
+                .catch(error => {
+                    console.error('获取日志失败:', error);
+                    logsContent.textContent = '获取日志失败，请稍后重试';
+                });
+        }
+    </script>
+{% endblock %}
