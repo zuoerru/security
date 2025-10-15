@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试日志悬浮窗口</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- 引入Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- 配置Tailwind颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#4080FF',
+                        success: '#00B42A',
+                        warning: '#FF7D00',
+                        danger: '#F53F3F',
+                        info: '#86909C',
+                        light: '#F2F3F5',
+                        dark: '#1D2129',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .shadow-md {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            .shadow-lg {
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">安全管理系统 - 测试页面</h1>
+        
+        <div class="mb-4">
+            <button id="view-logs-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors duration-300">
+                <i class="fa fa-history"></i>
+                <span>查看同步日志</span>
+            </button>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">主内容区域</h2>
+            <p class="text-gray-600">点击上方按钮查看悬浮日志窗口效果，日志窗口应显示在页面右上角。</p>
+        </div>
+    </div>
+
+    <!-- 日志查看悬浮窗口 -->
+    <div id="logs-modal" class="hidden fixed top-4 right-4 w-80 max-h-[70vh] border border-gray-200 bg-white rounded-lg shadow-lg overflow-hidden z-50">
+        <!-- 日志窗口标题栏 -->
+        <div class="bg-gray-100 p-3 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-800">同步日志</h3>
+            <button id="close-logs-btn" class="text-gray-500 hover:text-gray-700 transition-colors">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <!-- 日志内容区域 -->
+        <div id="logs-content" class="p-3 h-[calc(100%-110px)] overflow-y-auto bg-gray-50 text-sm">
+            <!-- 日志内容将在这里动态加载 -->
+            <div class="animate-pulse">
+                <div class="h-4 bg-gray-300 rounded mb-2 w-3/4"></div>
+                <div class="h-4 bg-gray-300 rounded mb-2 w-full"></div>
+                <div class="h-4 bg-gray-300 rounded mb-2 w-5/6"></div>
+                <div class="h-4 bg-gray-300 rounded mb-2 w-4/5"></div>
+            </div>
+        </div>
+        <!-- 底部按钮区域 -->
+        <div class="p-3 border-t border-gray-200 bg-white">
+            <button id="confirm-close-logs-btn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md transition-colors btn-sm">
+                关闭
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 查看日志按钮点击事件
+            document.getElementById('view-logs-btn').addEventListener('click', function() {
+                try {
+                    // 显示悬浮窗口
+                    const logsModal = document.getElementById('logs-modal');
+                    logsModal.classList.remove('hidden');
+                    // 设置display样式确保显示
+                    logsModal.style.display = 'block';
+                    
+                    // 模拟加载日志内容
+                    loadLogs();
+                } catch (error) {
+                    console.error('打开日志窗口失败:', error);
+                    alert('打开日志窗口失败，请刷新页面重试');
+                }
+            });
+
+            // 关闭按钮点击事件
+            document.getElementById('close-logs-btn').addEventListener('click', function() {
+                try {
+                    const logsModal = document.getElementById('logs-modal');
+                    if (logsModal) {
+                        console.log('关闭日志窗口 - 关闭按钮');
+                        // 确保添加hidden类
+                        logsModal.classList.add('hidden');
+                        // 同时设置display: none作为后备
+                        logsModal.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('关闭日志窗口失败:', error);
+                }
+            });
+
+            // 确认关闭日志窗口按钮点击事件
+            document.getElementById('confirm-close-logs-btn').addEventListener('click', function() {
+                try {
+                    const logsModal = document.getElementById('logs-modal');
+                    if (logsModal) {
+                        console.log('关闭日志窗口 - 关闭按钮');
+                        // 确保添加hidden类
+                        logsModal.classList.add('hidden');
+                        // 同时设置display: none作为后备
+                        logsModal.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('关闭日志窗口失败:', error);
+                }
+            });
+
+            // 模拟加载日志内容
+            function loadLogs() {
+                const logsContent = document.getElementById('logs-content');
+                // 模拟网络延迟
+                setTimeout(function() {
+                    logsContent.innerHTML = `
+                        <div class="mb-1 text-gray-700">[2025-10-14 08:30:12] 开始同步NVD数据</div>
+                        <div class="mb-1 text-green-600">[2025-10-14 08:30:15] NVD数据同步成功，共导入50条记录</div>
+                        <div class="mb-1 text-gray-700">[2025-10-14 08:30:16] 开始同步CISA数据</div>
+                        <div class="mb-1 text-green-600">[2025-10-14 08:30:20] CISA数据同步成功，共导入23条记录</div>
+                        <div class="mb-1 text-gray-700">[2025-10-14 08:30:21] 数据同步完成，总计73条记录</div>
+                        <div class="mb-1 text-gray-700">[2025-10-13 18:20:00] 开始同步NVD数据</div>
+                        <div class="mb-1 text-yellow-600">[2025-10-13 18:20:05] NVD数据源连接超时，尝试重试</div>
+                        <div class="mb-1 text-green-600">[2025-10-13 18:22:30] NVD数据同步成功，共导入42条记录</div>
+                        <div class="mb-1 text-green-600">[2025-10-13 18:22:45] CISA数据同步成功，共导入18条记录</div>
+                        <div class="mb-1 text-gray-700">[2025-10-13 18:22:46] 数据同步完成，总计60条记录</div>
+                    `;
+                }, 800);
+            }
+        });
+    </script>
+</body>
+</html>

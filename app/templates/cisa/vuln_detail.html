@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">CISA 漏洞详情 - {{ cisa_data.vuln_id }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group mr-2">
+                <a href="{{ url_for('cisa.cisa_index') }}" class="btn btn-sm btn-outline-secondary">返回列表</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            漏洞基本信息
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">漏洞 ID</dt>
+                <dd class="col-sm-9 font-weight-bold">{{ cisa_data.vuln_id }}</dd>
+                
+                <dt class="col-sm-3">厂商/项目</dt>
+                <dd class="col-sm-9">{{ cisa_data.vendor_project }}</dd>
+                
+                <dt class="col-sm-3">产品</dt>
+                <dd class="col-sm-9">{{ cisa_data.product or '-' }}</dd>
+                
+                <dt class="col-sm-3">漏洞名称</dt>
+                <dd class="col-sm-9">{{ cisa_data.vulnerability_name }}</dd>
+                
+                {% if cisa_data.cve_id %}
+                <dt class="col-sm-3">CVE ID</dt>
+                <dd class="col-sm-9">{{ cisa_data.cve_id }}</dd>
+                {% endif %}
+            </dl>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            详细信息
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">添加日期</dt>
+                <dd class="col-sm-9">{{ cisa_data.date_added.strftime('%Y-%m-%d') }}</dd>
+                
+                {% if cisa_data.short_description %}
+                <dt class="col-sm-3">简短描述</dt>
+                <dd class="col-sm-9">{{ cisa_data.short_description }}</dd>
+                {% endif %}
+                
+                {% if cisa_data.required_action %}
+                <dt class="col-sm-3">所需操作</dt>
+                <dd class="col-sm-9">{{ cisa_data.required_action }}</dd>
+                {% endif %}
+                
+                {% if cisa_data.due_date %}
+                <dt class="col-sm-3">截止日期</dt>
+                <dd class="col-sm-9">{{ cisa_data.due_date.strftime('%Y-%m-%d') }}</dd>
+                {% endif %}
+                
+                <dt class="col-sm-3">创建时间</dt>
+                <dd class="col-sm-9">{{ cisa_data.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+                
+                <dt class="col-sm-3">更新时间</dt>
+                <dd class="col-sm-9">{{ cisa_data.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{{ url_for('cisa.cisa_index') }}" class="btn btn-primary">
+            <i class="fa fa-arrow-left"></i> 返回漏洞列表
+        </a>
+    </div>
+{% endblock %}

@@ -1,89 +1,63 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">NVD 漏洞数据库</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group mr-2">
-                <button class="btn btn-sm btn-outline-secondary" id="sync-data-btn">手动同步数据</button>
-            </div>
-            <div class="btn-group mr-2">
-                <button class="btn btn-sm btn-outline-secondary" id="view-logs-btn">查看同步日志</button>
-            </div>
-            <div class="btn-group">
-                <span id="last-update" class="btn btn-sm btn-outline-info disabled">最后更新: 加载中...</span>
-            </div>
+    <!-- 引入NVD专用样式 -->
+    <link href="{{ url_for('static', filename='css/nvd-styles.css') }}" rel="stylesheet">
+    
+    <!-- 顶部标题区域 - 使用渐变背景美化 -->
+    <div class="page-header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center px-4">
+        <h1>NVD 漏洞数据库</h1>
+    </div>
+
+    <!-- 日志查看悬浮窗口 -->
+    <div id="logs-modal" class="fixed top-4 right-4 w-80 max-h-[70vh] bg-white rounded-lg shadow-xl z-1000 hidden border border-gray-200 overflow-hidden" style="position: fixed !important; top: 10px !important; right: 10px !important; z-index: 1000 !important; display: none;">
+        <div class="p-4 border-b flex justify-between items-center">
+            <h5 class="text-lg font-bold">同步日志</h5>
+            <button id="close-logs-btn" class="text-gray-500 hover:text-gray-700 text-xl">
+                &times;
+            </button>
+        </div>
+        <div id="logs-content" class="p-3 overflow-y-auto h-[calc(100%-110px)]">
+            加载日志中...
+        </div>
+        <div class="p-3 border-t">
+            <button id="confirm-close-logs-btn" class="btn btn-secondary btn-sm">关闭</button>
         </div>
     </div>
 
-    <!-- 日期范围选择器，默认隐藏 -->
-    <div id="date-range-form" class="mb-4 p-3 border rounded bg-light hidden">
+    <!-- 日期范围选择器，默认隐藏 - 添加卡片样式 -->
+    <div id="date-range-form" class="mb-4 p-4 border rounded bg-light hidden">
         <div class="row">
-            <div class="col-md-5">
+            <div class="col-md-2">
+                <form id="search-form" method="get" action="{{ url_for('nvd.nvd_index') }}">
+                    <input type="hidden" name="page" value="1">
+                    <input type="hidden" name="per_page" value="{{ per_page }}">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="搜索CVE ID、描述、厂商或产品" name="search" value="{{ search_query }}">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="submit">搜索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-3">
                 <label for="start_date" class="form-label">开始日期:</label>
                 <input type="date" id="start_date" class="form-control" max="{{ today }}">
             </div>
-            <div class="col-md-5">
+            <div class="col-md-3">
                 <label for="end_date" class="form-label">结束日期:</label>
                 <input type="date" id="end_date" class="form-control" max="{{ today }}">
             </div>
-            <div class="col-md-2" style="display: flex; align-items: flex-end;">
-                <button id="confirm-sync-btn" class="btn btn-primary btn-sm w-100">确认同步</button>
+            <div class="col-md-6 d-flex align-items-center gap-6" style="flex-wrap: nowrap !important;">
+                <button id="confirm-sync-btn" class="btn btn-primary">确认同步</button>
+                <button class="btn btn-outline-secondary" id="sync-data-btn">手动同步数据</button>
+                <button class="btn btn-outline-secondary" id="view-logs-btn">查看同步日志</button>
+                <span id="last-update" class="btn btn-outline-info disabled ml-auto">最后更新: 加载中...</span>
             </div>
         </div>
     </div>
 
-    <!-- 日志查看模态框 -->
-    <div class="modal fade" id="logs-modal" tabindex="-1" role="dialog" aria-labelledby="logs-modal-label" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="logs-modal-label">同步日志</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div id="logs-content" class="pre-wrap" style="max-height: 500px; overflow-y: auto;">
-                        加载日志中...
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- 搜索框和分页选项 -->
-    <div class="mb-4">
-        <form id="search-form" method="get" action="{{ url_for('nvd.nvd_index') }}">
-            <input type="hidden" name="page" value="1">
-            <input type="hidden" name="per_page" value="{{ per_page }}">
-            <div class="input-group">
-                <input type="text" class="form-control" placeholder="搜索CVE ID、描述、厂商或产品" name="search" value="{{ search_query }}">
-                <div class="input-group-append">
-                    <button class="btn btn-primary" type="submit">搜索</button>
-                </div>
-            </div>
-        </form>
-        
-        <!-- 每页显示条数选择器 -->
-        <div class="mt-2 d-flex justify-content-between align-items-center">
-            <div>
-                <label for="per_page" class="mr-2">每页显示:</label>
-                <select id="per_page" class="form-control-sm">
-                    {% for option in per_page_options %}
-                        <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="text-muted">
-                共 {{ total_count }} 条记录
-            </div>
-        </div>
-    </div>
 
     <!-- 数据表格 -->
     <div class="table-responsive">
@@ -105,7 +79,7 @@
                 {% if data %}
                     {% for item in data %}
                         <tr>
-                            <td>{{ item.cve_id }}</td>
+                            <td><a href="{{ url_for('nvd.cve_detail', cve_id=item.cve_id) }}" class="text-primary hover:underline">{{ item.cve_id }}</a></td>
                             <td>{{ item.published_date.strftime('%Y-%m-%d') }}</td>
                             <td>{{ item.last_modified_date.strftime('%Y-%m-%d') }}</td>
                             <td>{{ item.description[:100] }}{% if item.description|length > 100 %}...{% endif %}</td>
@@ -164,6 +138,19 @@
     </div>
     {% endif %}
 
+    <!-- 每页显示条数选择器（移到页面底部） -->
+    <div class="mt-4 d-flex justify-content-center">
+        <div class="d-flex items-center">
+            <label for="per_page" class="mr-2">每页显示:</label>
+            <select id="per_page" class="form-control-sm">
+                {% for option in per_page_options %}
+                    <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+            <span class="ml-4 text-muted">共 {{ total_count }} 条记录</span>
+        </div>
+    </div>
+
     <!-- JavaScript -->
     <script>
         // 页面加载完成后执行
@@ -212,11 +199,63 @@
             
             // 查看日志按钮点击事件
             document.getElementById('view-logs-btn').addEventListener('click', function() {
-                const logsModal = new bootstrap.Modal(document.getElementById('logs-modal'));
-                logsModal.show();
-                
-                // 加载日志内容
-                loadLogs();
+                try {
+                    // 显示悬浮窗口
+                    const logsModal = document.getElementById('logs-modal');
+                    logsModal.classList.remove('hidden');
+                    // 设置所有关键样式确保显示
+                    logsModal.style.display = 'block';
+                    logsModal.style.position = 'fixed';
+                    logsModal.style.top = '10px';
+                    logsModal.style.right = '10px';
+                    logsModal.style.zIndex = '9999';
+                    
+                    console.log('显示悬浮窗口 - 样式设置完成:', {
+                        display: logsModal.style.display,
+                        position: logsModal.style.position,
+                        top: logsModal.style.top,
+                        right: logsModal.style.right,
+                        zIndex: logsModal.style.zIndex
+                    });
+                    
+                    // 加载日志内容
+                    loadLogs();
+                } catch (error) {
+                    console.error('打开日志窗口失败:', error);
+                    alert('打开日志窗口失败，请刷新页面重试');
+                }
+            });
+            
+            // 关闭日志窗口按钮点击事件
+            document.getElementById('close-logs-btn').addEventListener('click', function() {
+                try {
+                    const logsModal = document.getElementById('logs-modal');
+                    if (logsModal) {
+                        console.log('关闭日志窗口 - X按钮');
+                        // 确保添加hidden类
+                        logsModal.classList.add('hidden');
+                        // 同时设置display: none作为后备
+                        logsModal.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('关闭日志窗口失败:', error);
+                }
+            });
+            
+            // 确认关闭日志窗口按钮点击事件
+            document.getElementById('confirm-close-logs-btn').addEventListener('click', function() {
+                try {
+                    const logsModal = document.getElementById('logs-modal');
+                    if (logsModal) {
+                        console.log('关闭日志窗口 - 关闭按钮');
+                        // 确保添加hidden类
+                        logsModal.classList.add('hidden');
+                        // 同时设置display: none作为后备
+                        logsModal.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('关闭日志窗口失败:', error);
+                }
             });
             
             // 每10秒自动更新数据
@@ -254,21 +293,26 @@
             const sortOrder = searchParams.get('sort_order') || 'desc';
             
             // 构建API请求URL
-            const apiUrl = new URL('{{ url_for('nvd.api_data', _external=True) }}');
-            apiUrl.searchParams.append('search', searchQuery);
-            apiUrl.searchParams.append('page', page);
-            apiUrl.searchParams.append('per_page', perPage);
-            apiUrl.searchParams.append('sort_by', sortBy);
-            apiUrl.searchParams.append('sort_order', sortOrder);
+            const baseUrl = window.location.origin + '/nvd/api/data';
+            const apiUrl = baseUrl + '?search=' + encodeURIComponent(searchQuery) + '&page=' + page + '&per_page=' + perPage + '&sort_by=' + sortBy + '&sort_order=' + sortOrder;
             
             // 发送请求获取数据
             fetch(apiUrl)
-                .then(response => response.json())
-                .then(data => {
-                    // 更新表格内容
-                    updateTableContent(data.data);
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('网络响应错误: ' + response.status);
+                    }
+                    return response.json();
                 })
-                .catch(error => {
+                .then(function(data) {
+                    if (data && data.data) {
+                        // 更新表格内容
+                        updateTableContent(data.data);
+                    } else {
+                        console.error('数据格式不正确');
+                    }
+                })
+                .catch(function(error) {
                     console.error('获取数据失败:', error);
                 });
         }
@@ -282,7 +326,8 @@
                 tableBody.innerHTML = '';
                 
                 // 添加新数据行
-                data.forEach(item => {
+                for (let i = 0; i < data.length; i++) {
+                    const item = data[i];
                     const row = document.createElement('tr');
                     
                     // 构建严重性标签
@@ -296,52 +341,69 @@
                             case 'LOW': badgeClass = 'bg-secondary'; break;
                             default: badgeClass = 'bg-info'; break;
                         }
-                        severityBadge = `<span class="badge ${badgeClass}">${item.base_severity}</span>`;
+                        severityBadge = '<span class="badge ' + badgeClass + '">' + item.base_severity + '</span>';
                     }
                     
                     // 设置行内容
                     row.innerHTML = 
-                        `<td>${item.cve_id}</td>
-                        <td>${item.published_date}</td>
-                        <td>${item.last_modified_date}</td>
-                        <td>${item.description.substring(0, 100)}${item.description.length > 100 ? '...' : ''}</td>
-                        <td>${item.base_score || '-'}</td>
-                        <td>${severityBadge}</td>
-                        <td>${item.vector_string ? item.vector_string.substring(0, 30) + (item.vector_string.length > 30 ? '...' : '') : '-'}</td>
-                        <td>${item.vendor || '-'}</td>
-                        <td>${item.product || '-'}</td>`;
+                        '<td><a href="/nvd/cve/' + item.cve_id + '" class="text-primary hover:underline">' + item.cve_id + '</a></td>' +
+                        '<td>' + item.published_date + '</td>' +
+                        '<td>' + item.last_modified_date + '</td>' +
+                        '<td>' + (item.description ? (item.description.substring(0, 100) + (item.description.length > 100 ? '...' : '')) : '-') + '</td>' +
+                        '<td>' + (item.base_score || '-') + '</td>' +
+                        '<td>' + severityBadge + '</td>' +
+                        '<td>' + (item.vector_string ? (item.vector_string.substring(0, 30) + (item.vector_string.length > 30 ? '...' : '')) : '-') + '</td>' +
+                        '<td>' + (item.vendor || '-') + '</td>' +
+                        '<td>' + (item.product || '-') + '</td>';
                     
                     tableBody.appendChild(row);
-                });
+                }
             }
         }
         
         // 加载同步日志
         function loadLogs() {
             const logsContent = document.getElementById('logs-content');
-            logsContent.textContent = '加载日志中...';
+            logsContent.innerHTML = '<div class="text-center text-muted">加载日志中...</div>';
             
             // 从服务器获取日志内容
-            fetch('{{ url_for('nvd.api_logs', _external=True) }}')
-                .then(response => response.json())
-                .then(logs => {
-                    if (logs.length > 0) {
-                        let logsText = '';
-                        logs.forEach(log => {
+            const baseUrl = window.location.origin + '/nvd/api/logs';
+            fetch(baseUrl)
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('网络响应错误: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(function(logs) {
+                    if (logs && logs.length > 0) {
+                        let logsHTML = '<ul class="list-unstyled">';
+                        for (let i = 0; i < logs.length; i++) {
+                            const log = logs[i];
                             const actionType = log.action_type === 'auto' ? '自动同步' : '手动同步';
+                            const actionClass = log.action_type === 'auto' ? 'badge-secondary' : 'badge-primary';
                             const dateRange = log.start_date && log.end_date 
-                                ? ' (' + log.start_date + ' 至 ' + log.end_date + ')' 
+                                ? ' <span class="text-muted">(</span><span class="text-info">' + log.start_date + '</span> <span class="text-muted">至</span> <span class="text-info">' + log.end_date + '</span><span class="text-muted">)</span>' 
                                 : '';
-                            logsText += log.timestamp + ' - ' + actionType + '完成，新增 ' + log.count + ' 条记录' + dateRange + '\n';
-                        });
-                        logsContent.textContent = logsText.trim();
+                            
+                            logsHTML += '<li class="p-4 bg-light rounded border border-gray-200 mb-4 shadow-sm">';
+                            logsHTML += '<div class="text-sm text-gray-500 mb-2">' + log.timestamp + '</div>';
+                            logsHTML += '<div class="flex flex-wrap items-center gap-3">';
+                            logsHTML += '<span class="badge ' + actionClass + ' px-3 py-1">' + actionType + '</span>';
+                            logsHTML += '<span class="text-gray-800">完成，新增 <span class="font-bold text-primary">' + log.count + '</span> 条记录</span>';
+                            logsHTML += dateRange;
+                            logsHTML += '</div>';
+                            logsHTML += '</li>';
+                        }
+                        logsHTML += '</ul>';
+                        logsContent.innerHTML = logsHTML;
                     } else {
-                        logsContent.textContent = '暂无同步日志';
+                        logsContent.innerHTML = '<div class="text-center text-muted py-4">暂无同步日志</div>';
                     }
                 })
-                .catch(error => {
+                .catch(function(error) {
                     console.error('获取日志失败:', error);
-                    logsContent.textContent = '获取日志失败，请稍后重试';
+                    logsContent.innerHTML = '<div class="text-center text-danger py-4">获取日志失败，请稍后重试</div>';
                 });
         }
     </script>

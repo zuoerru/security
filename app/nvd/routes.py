@@ -44,7 +44,7 @@ def nvd_index():
 def sync_data():
     """手动触发数据同步"""
     from datetime import datetime, timedelta
-    from flask import request
+    from flask import request, redirect, url_for, flash
     
     # 获取时间范围参数
     start_date_str = request.args.get('start_date')
@@ -56,7 +56,8 @@ def sync_data():
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
         except ValueError:
-            return "日期格式错误，请使用YYYY-MM-DD格式"
+            flash('日期格式错误，请使用YYYY-MM-DD格式', 'danger')
+            return redirect(url_for('nvd.nvd_index'))
     else:
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=7)
@@ -64,14 +65,17 @@ def sync_data():
     # 调用同步方法
     success_count = NvdService.sync_and_save_tsv(start_date=start_date, end_date=end_date)
     
-    # 记录同步日志
+    # 记录同步日志并显示消息
     if success_count >= 0:
         sync_log_service.add_log('manual', success_count, start_date, end_date)
-        return f"数据同步成功，新增 {success_count} 条记录"
+        flash(f'数据同步成功，新增 {success_count} 条记录', 'success')
     else:
         # 记录失败日志
         sync_log_service.add_log('manual', 0, start_date, end_date)
-        return "数据同步失败"
+        flash('数据同步失败', 'danger')
+    
+    # 重定向回NVD主页面
+    return redirect(url_for('nvd.nvd_index'))
 
 @nvd_bp.route('/init-db')
 def init_db():
@@ -141,3 +145,16 @@ def api_logs():
     
     # 返回JSON响应
     return jsonify(logs)
+    
+@nvd_bp.route('/cve/<cve_id>')
+def cve_detail(cve_id):
+    """显示单个CVE的详细信息"""
+    cve_data = NvdService.get_by_cve_id(cve_id)
+    
+    if not cve_data:
+        # 如果找不到对应的CVE，显示错误信息
+        from flask import flash, redirect, url_for
+        flash(f'未找到CVE ID为 {cve_id} 的记录', 'danger')
+        return redirect(url_for('nvd.nvd_index'))
+    
+    return render_template('nvd/cve_detail.html', cve_data=cve_data)

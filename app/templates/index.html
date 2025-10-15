@@ -1,39 +1,158 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">欢迎使用安全管理系统</h1>
-    </div>
-
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    系统简介
+    <!-- 顶部横幅 -->
+    <div class="hero-banner bg-gradient-primary py-8 mb-6 rounded-lg shadow-lg">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="text-white display-4 mb-3">安全管理系统</h1>
+                    <p class="text-white opacity-90 lead">
+                        全方位安全数据管理平台，集成CISA、CVE、NVD和NESSUS等多种安全数据源
+                    </p>
                 </div>
-                <div class="card-body">
-                    <p class="card-text">这是一个安全数据管理系统，集成了CISA、CVE和NESSUS等多种安全数据源的信息展示和管理功能。</p>
-                    <p class="card-text">请使用左侧导航栏选择不同的功能模块。</p>
+                <div class="col-md-4 d-none d-md-block">
+                    <div class="text-center">
+                        <svg class="security-icon" width="180" height="180" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="1.5"/>
+                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" fill="white"/>
+                            <path d="M17.5 17.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z" fill="white"/>
+                        </svg>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    快速访问
+    </div>
+
+    <!-- 系统简介 -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="flex items-center mb-4">
+                    <svg class="mr-3" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#3498db"/>
+                        <path d="M2 17l10 5 10-5" fill="none" stroke="#3498db" stroke-width="2"/>
+                        <path d="M2 12l10 5 10-5" fill="none" stroke="#3498db" stroke-width="2"/>
+                    </svg>
+                    <h2 class="text-xl font-bold text-gray-800">系统简介</h2>
                 </div>
-                <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">
-                            <a href="{{ url_for('cisa.cisa_index') }}">CISA 数据管理</a>
-                        </li>
-                        <li class="list-group-item">
-                            <a href="{{ url_for('cve.cve_index') }}">CVE 漏洞管理</a>
-                        </li>
-                        <li class="list-group-item">
-                            <a href="{{ url_for('nessus.nessus_index') }}">NESSUS 扫描结果</a>
-                        </li>
-                    </ul>
+                <p class="text-gray-600 mb-4">
+                    我们的安全管理系统为您提供全面的安全数据管理解决方案，帮助您轻松监控、分析和应对各类安全威胁。系统集成了多个权威安全数据源，让您的安全工作更加高效和精准。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 功能模块 -->
+    <div class="grid-container mb-6">
+        <div class="row">
+            <!-- CISA模块 -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 bg-gradient-blue shadow-md border-0 rounded-lg transition-transform hover:scale-105">
+                    <div class="card-body text-center">
+                        <div class="mb-4 bg-white bg-opacity-20 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                                <path d="M12 12c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z"/>
+                            </svg>
+                        </div>
+                        <h3 class="h4 font-bold text-white mb-2">CISA 数据管理</h3>
+                        <p class="text-white text-opacity-80 mb-4">管理和查看CISA已知被利用漏洞目录</p>
+                        <a href="{{ url_for('cisa.cisa_index') }}" class="btn btn-white text-blue font-medium rounded-full px-6 py-2">
+                            访问模块
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CVE模块 -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 bg-gradient-purple shadow-md border-0 rounded-lg transition-transform hover:scale-105">
+                    <div class="card-body text-center">
+                        <div class="mb-4 bg-white bg-opacity-20 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                <path d="M12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                            </svg>
+                        </div>
+                        <h3 class="h4 font-bold text-white mb-2">CVE 漏洞管理</h3>
+                        <p class="text-white text-opacity-80 mb-4">全面的CVE漏洞信息查询和管理</p>
+                        <a href="{{ url_for('cve.cve_index') }}" class="btn btn-white text-purple font-medium rounded-full px-6 py-2">
+                            访问模块
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NVD模块 -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 bg-gradient-green shadow-md border-0 rounded-lg transition-transform hover:scale-105">
+                    <div class="card-body text-center">
+                        <div class="mb-4 bg-white bg-opacity-20 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
+                                <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="h4 font-bold text-white mb-2">NVD 数据中心</h3>
+                        <p class="text-white text-opacity-80 mb-4">国家漏洞数据库信息同步与管理</p>
+                        <a href="{{ url_for('nvd.nvd_index') }}" class="btn btn-white text-green font-medium rounded-full px-6 py-2">
+                            访问模块
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NESSUS模块 -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 bg-gradient-orange shadow-md border-0 rounded-lg transition-transform hover:scale-105">
+                    <div class="card-body text-center">
+                        <div class="mb-4 bg-white bg-opacity-20 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19.66 3.99c-2.64-1.8-5.9-.96-7.66 1.1-1.76-2.06-5.02-2.91-7.66-1.1-1.4.96-2.28 2.58-2.34 4.29-.14 3.88 3.3 6.99 8.55 11.76l.1.09c.76.69 1.93.69 2.69-.01l.11-.1c5.25-4.76 8.68-7.87 8.55-11.75-.06-1.7-.94-3.32-2.34-4.28zM12.1 18.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/>
+                            </svg>
+                        </div>
+                        <h3 class="h4 font-bold text-white mb-2">NESSUS 扫描结果</h3>
+                        <p class="text-white text-opacity-80 mb-4">漏洞扫描报告管理与分析</p>
+                        <a href="{{ url_for('nessus.nessus_index') }}" class="btn btn-white text-orange font-medium rounded-full px-6 py-2">
+                            访问模块
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统特点 -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">系统特点</h2>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="feature-card text-center p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                    <svg class="mx-auto mb-3 text-blue" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                    </svg>
+                    <h3 class="font-bold text-lg text-gray-800 mb-2">多源数据集成</h3>
+                    <p class="text-gray-600">整合多个权威安全数据源，提供全面的安全信息视图</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card text-center p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                    <svg class="mx-auto mb-3 text-purple" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
+                    </svg>
+                    <h3 class="font-bold text-lg text-gray-800 mb-2">实时数据同步</h3>
+                    <p class="text-gray-600">定期自动同步最新安全数据，确保信息的时效性</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card text-center p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                    <svg class="mx-auto mb-3 text-green" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 8l-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14z" fill="currentColor"/>
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
+                    </svg>
+                    <h3 class="font-bold text-lg text-gray-800 mb-2">智能分析展示</h3>
+                    <p class="text-gray-600">直观的数据可视化展示，帮助快速识别安全风险</p>
                 </div>
             </div>
         </div>

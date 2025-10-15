@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>验证悬浮窗口功能</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">安全管理系统 - NVD数据管理</h1>
+        
+        <!-- 按钮区域 -->
+        <div class="mb-6">
+            <button id="view-logs-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors duration-300">
+                <i class="fa fa-history"></i>
+                <span>查看同步日志</span>
+            </button>
+        </div>
+        
+        <!-- 主内容区域 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">NVD数据列表</h2>
+            <p class="text-gray-600">点击上方按钮查看悬浮日志窗口效果</p>
+        </div>
+    </div>
+
+    <!-- 日志查看悬浮窗口 (与实际应用中完全相同的代码) -->
+    <div id="logs-modal" class="fixed top-4 right-4 w-80 max-h-[70vh] bg-white rounded-lg shadow-xl z-50 hidden border border-gray-200 overflow-hidden">
+        <div class="p-4 border-b flex justify-between items-center">
+            <h5 class="text-lg font-bold">同步日志</h5>
+            <button id="close-logs-btn" class="text-gray-500 hover:text-gray-700 text-xl">
+                &times;
+            </button>
+        </div>
+        <div id="logs-content" class="p-3 overflow-y-auto h-[calc(100%-110px)]">
+            <!-- 模拟日志内容 -->
+            <div class="mb-1 text-gray-700">[2025-10-14 08:30:12] 开始同步NVD数据</div>
+            <div class="mb-1 text-green-600">[2025-10-14 08:30:15] NVD数据同步成功，共导入50条记录</div>
+            <div class="mb-1 text-gray-700">[2025-10-14 08:30:16] 开始同步CISA数据</div>
+            <div class="mb-1 text-green-600">[2025-10-14 08:30:20] CISA数据同步成功，共导入23条记录</div>
+            <div class="mb-1 text-gray-700">[2025-10-14 08:30:21] 数据同步完成，总计73条记录</div>
+        </div>
+        <div class="p-3 border-t">
+            <button id="confirm-close-logs-btn" class="btn btn-secondary btn-sm">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 查看日志按钮点击事件
+            document.getElementById('view-logs-btn').addEventListener('click', function() {
+                try {
+                    // 显示悬浮窗口
+                    const logsModal = document.getElementById('logs-modal');
+                    logsModal.classList.remove('hidden');
+                    // 设置display样式确保显示
+                    logsModal.style.display = 'block';
+                    
+                    console.log('显示日志窗口:', logsModal.style);
+                } catch (error) {
+                    console.error('打开日志窗口失败:', error);
+                    alert('打开日志窗口失败，请刷新页面重试');
+                }
+            });
+
+            // 关闭按钮点击事件
+            document.getElementById('close-logs-btn').addEventListener('click', function() {
+                try {
+                    const logsModal = document.getElementById('logs-modal');
+                    if (logsModal) {
+                        console.log('关闭日志窗口 - X按钮');
+                        // 确保添加hidden类
+                        logsModal.classList.add('hidden');
+                        // 同时设置display: none作为后备
+                        logsModal.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('关闭日志窗口失败:', error);
+                }
+            });
+
+            // 确认关闭日志窗口按钮点击事件
+            document.getElementById('confirm-close-logs-btn').addEventListener('click', function() {
+                try {
+                    const logsModal = document.getElementById('logs-modal');
+                    if (logsModal) {
+                        console.log('关闭日志窗口 - 关闭按钮');
+                        // 确保添加hidden类
+                        logsModal.classList.add('hidden');
+                        // 同时设置display: none作为后备
+                        logsModal.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('关闭日志窗口失败:', error);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

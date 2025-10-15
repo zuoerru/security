@@ -93,6 +93,11 @@ class NvdService:
                 NvdData.product.like(search)
             )
         ).count()
+        
+    @staticmethod
+    def get_by_cve_id(cve_id):
+        """根据CVE ID获取单个漏洞详情"""
+        return NvdData.query.filter_by(cve_id=cve_id).first()
     
     @staticmethod
     def import_from_tsv(file_path):

@@ -1,0 +1,395 @@
+/* NVD页面专用样式 - 安全科技风格配色方案 */
+
+/* 基础变量定义 */
+:root {
+    --nvd-primary: #165DFF;
+    --nvd-primary-light: #4080FF;
+    --nvd-primary-dark: #0E42D2;
+    --nvd-secondary: #0FC6C2;
+    --nvd-background: #F5F7FA;
+    --nvd-card-bg: #FFFFFF;
+    --nvd-text-primary: #1D2129;
+    --nvd-text-secondary: #4E5969;
+    --nvd-text-light: #86909C;
+    --nvd-border: #E5E6EB;
+    --nvd-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --nvd-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* 页面背景 */
+body {
+    background-color: var(--nvd-background);
+    color: var(--nvd-text-primary);
+}
+
+/* 主内容区域 */
+main {
+    padding-top: 20px;
+    min-height: calc(100vh - 40px);
+}
+
+/* 顶部标题区域美化 */
+.page-header {
+    background: linear-gradient(135deg, var(--nvd-primary) 0%, var(--nvd-secondary) 100%);
+    color: white;
+    padding: 20px 0;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    box-shadow: var(--nvd-shadow);
+}
+
+.page-header h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* 工具栏按钮样式 */
+.btn-toolbar .btn {
+    transition: all 0.3s ease;
+    border-radius: 6px;
+}
+
+.btn-toolbar .btn-outline-info {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.btn-toolbar .btn-outline-info:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: white;
+}
+
+/* 日期范围选择器样式 */
+#date-range-form {
+    background-color: var(--nvd-card-bg);
+    border-radius: 8px;
+    box-shadow: var(--nvd-shadow);
+    transition: all 0.3s ease;
+    padding: 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+#date-range-form:hover {
+    box-shadow: var(--nvd-shadow-hover);
+}
+
+/* 按钮容器样式 */
+#date-range-form .col-md-4 {
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    display: flex;
+}
+
+/* 主按钮容器 */
+#date-range-form .row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    flex-wrap: nowrap;
+}
+
+/* 确保所有输入框和按钮在一行显示 */
+#date-range-form .col-md-2,
+#date-range-form .col-md-3,
+#date-range-form .col-md-4 {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+}
+
+/* 最后更新时间按钮样式 */
+#last-update {
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    min-width: 120px;
+    text-align: center;
+    background-color: rgba(22, 93, 255, 0.05);
+    border-color: rgba(22, 93, 255, 0.2);
+    color: var(--nvd-primary);
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+#last-update:not(.disabled) {
+    cursor: default;
+}
+
+#last-update:hover {
+    background-color: rgba(22, 93, 255, 0.1);
+}
+
+/* 确认同步按钮样式 */
+#confirm-sync-btn {
+    margin-top: 0 !important;
+    padding: 4px 12px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    min-width: 90px;
+}
+
+/* 操作按钮样式 */
+#sync-data-btn,
+#view-logs-btn {
+    padding: 4px 12px;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    min-width: 110px;
+    white-space: nowrap;
+}
+
+#sync-data-btn:hover,
+#view-logs-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(22, 93, 255, 0.2);
+}
+
+/* 表单元素样式 */
+.form-control {
+    border-radius: 6px;
+    border: 1px solid var(--nvd-border);
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: var(--nvd-primary);
+    box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.2);
+}
+
+/* 搜索框样式 */
+.input-group {
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+/* 按钮样式优化 */
+.btn {
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: var(--nvd-primary);
+    border-color: var(--nvd-primary);
+}
+
+.btn-primary:hover {
+    background-color: var(--nvd-primary-dark);
+    border-color: var(--nvd-primary-dark);
+}
+
+.btn-outline-secondary {
+    border-color: var(--nvd-border);
+    color: var(--nvd-text-secondary);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--nvd-background);
+    border-color: var(--nvd-primary-light);
+    color: var(--nvd-primary);
+}
+
+/* 数据表格样式美化 */
+.table-responsive {
+    background-color: var(--nvd-card-bg);
+    border-radius: 8px;
+    box-shadow: var(--nvd-shadow);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.table-responsive:hover {
+    box-shadow: var(--nvd-shadow-hover);
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead {
+    background-color: rgba(22, 93, 255, 0.05);
+}
+
+.table th {
+    font-weight: 600;
+    color: var(--nvd-text-primary);
+    border-bottom: 2px solid var(--nvd-border);
+    padding: 12px 16px;
+}
+
+.table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--nvd-border);
+    vertical-align: middle;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(22, 93, 255, 0.03);
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* 评分列样式 */
+.table td:nth-child(5) {
+    font-weight: 600;
+}
+
+/* 严重程度标签样式优化 */
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
+/* 分页导航样式 */
+.pagination {
+    margin-top: 24px;
+}
+
+.pagination .page-link {
+    border-radius: 6px;
+    margin: 0 4px;
+    transition: all 0.3s ease;
+    color: var(--nvd-text-secondary);
+    border: 1px solid var(--nvd-border);
+}
+
+.pagination .page-link:hover {
+    color: var(--nvd-primary);
+    border-color: var(--nvd-primary-light);
+    background-color: rgba(22, 93, 255, 0.05);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--nvd-primary);
+    border-color: var(--nvd-primary);
+    color: white;
+}
+
+/* 每页显示条数选择器 */
+#per_page {
+    border-radius: 6px;
+    border: 1px solid var(--nvd-border);
+    padding: 4px 8px;
+    background-color: var(--nvd-card-bg);
+}
+
+/* 日志悬浮窗口样式美化 */
+#logs-modal {
+    border-radius: 12px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid var(--nvd-border);
+    transition: all 0.3s ease;
+}
+
+#logs-modal:hover {
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2) !important;
+}
+
+#logs-modal .modal-header {
+    background-color: var(--nvd-primary);
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+
+#close-logs-btn {
+    color: white;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+#close-logs-btn:hover {
+    opacity: 1;
+    transform: rotate(90deg);
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+    /* 调整较大屏幕下的按钮和输入框尺寸 */
+    #sync-data-btn,
+    #view-logs-btn,
+    #confirm-sync-btn,
+    #last-update {
+        padding: 3px 10px;
+        font-size: 0.8rem;
+        min-width: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        padding: 16px 0;
+    }
+    
+    .page-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .table th, .table td {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+    
+    #date-range-form .row {
+        flex-direction: column;
+    }
+    
+    #date-range-form .col-md-2, 
+    #date-range-form .col-md-3,
+    #date-range-form .col-md-4 {
+        margin-bottom: 12px;
+        width: 100%;
+    }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.page-header, 
+#date-range-form, 
+.table-responsive {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* 链接样式 */
+a {
+    color: var(--nvd-primary);
+    transition: all 0.3s ease;
+}
+
+a:hover {
+    color: var(--nvd-primary-dark);
+    text-decoration: none;
+}
+
+/* 工具提示样式 */
+.tooltip-inner {
+    background-color: var(--nvd-text-primary);
+    border-radius: 6px;
+}
+
+.tooltip.bs-tooltip-top .tooltip-arrow:before {
+    border-top-color: var(--nvd-text-primary);
+}

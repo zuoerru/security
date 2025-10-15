@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最简悬浮窗口测试</title>
+    <style>
+        /* 最基本的样式 */
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .btn {
+            padding: 10px 15px;
+            background-color: #165DFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #0E4AD9;
+        }
+        /* 悬浮窗口样式 */
+        .float-window {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 300px;
+            max-height: 400px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            display: none;
+        }
+        .float-window-header {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f5f5f5;
+            border-radius: 8px 8px 0 0;
+        }
+        .float-window-title {
+            font-weight: bold;
+            margin: 0;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #666;
+        }
+        .close-btn:hover {
+            color: #333;
+        }
+        .float-window-content {
+            padding: 15px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .float-window-footer {
+            padding: 10px 15px;
+            border-top: 1px solid #eee;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <h1>悬浮窗口功能测试</h1>
+    
+    <button id="show-window-btn" class="btn">显示悬浮窗口</button>
+    
+    <!-- 悬浮窗口 -->
+    <div id="float-window" class="float-window">
+        <div class="float-window-header">
+            <h3 class="float-window-title">同步日志</h3>
+            <button id="close-x-btn" class="close-btn">×</button>
+        </div>
+        <div class="float-window-content">
+            <p>测试日志内容：</p>
+            <div>[2025-10-14 08:30:12] 开始同步NVD数据</div>
+            <div>[2025-10-14 08:30:15] NVD数据同步成功</div>
+            <div>[2025-10-14 08:30:16] 开始同步CISA数据</div>
+            <div>[2025-10-14 08:30:20] CISA数据同步成功</div>
+        </div>
+        <div class="float-window-footer">
+            <button id="close-btn" class="btn">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const windowElement = document.getElementById('float-window');
+            const showBtn = document.getElementById('show-window-btn');
+            const closeBtn = document.getElementById('close-btn');
+            const closeXBtn = document.getElementById('close-x-btn');
+            
+            // 显示窗口
+            showBtn.addEventListener('click', function() {
+                try {
+                    console.log('显示悬浮窗口');
+                    windowElement.style.display = 'block';
+                    console.log('窗口样式:', windowElement.style);
+                } catch (error) {
+                    console.error('显示窗口失败:', error);
+                }
+            });
+            
+            // 关闭按钮
+            function closeWindow() {
+                try {
+                    console.log('关闭悬浮窗口');
+                    windowElement.style.display = 'none';
+                } catch (error) {
+                    console.error('关闭窗口失败:', error);
+                }
+            }
+            
+            closeBtn.addEventListener('click', closeWindow);
+            closeXBtn.addEventListener('click', closeWindow);
+        });
+    </script>
+</body>
+</html>

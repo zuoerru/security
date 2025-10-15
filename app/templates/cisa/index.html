@@ -1,107 +1,150 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">CISA 已知被利用漏洞目录</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group mr-2">
-                <a href="{{ url_for('cisa.sync_data') }}" class="btn btn-sm btn-outline-secondary">手动同步数据</a>
-            </div>
-            <div class="btn-group">
-                <span id="last-update" class="btn btn-sm btn-outline-info disabled">最后更新: 加载中...</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- 搜索框和分页选项 -->
-    <div class="mb-4">
-        <form id="search-form" method="get" action="{{ url_for('cisa.cisa_index') }}">
-            <input type="hidden" name="page" value="1">
-            <input type="hidden" name="per_page" value="{{ per_page }}">
-            <div class="input-group">
-                <input type="text" class="form-control" placeholder="搜索厂商、产品、漏洞名称或CVE ID" name="search" value="{{ search_query }}">
-                <div class="input-group-append">
-                    <button class="btn btn-primary" type="submit">搜索</button>
-                </div>
-            </div>
-        </form>
-        
-        <!-- 每页显示条数选择器 -->
-        <div class="mt-2 d-flex justify-content-between align-items-center">
-            <div>
-                <label for="per_page" class="mr-2">每页显示:</label>
-                <select id="per_page" class="form-control-sm">
-                    {% for option in per_page_options %}
-                        <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
-                    {% endfor %}
-                </select>
+    <!-- 页面标题和操作按钮 -->
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <div class="d-flex flex-column">
+            <!-- 标题部分 -->
+            <div class="mb-4">
+                <h1 class="text-2xl font-bold text-gray-800 flex items-center">
+                    <svg class="mr-3 text-blue" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="currentColor"/>
+                        <path d="M12 12c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z" fill="white"/>
+                    </svg>
+                    CISA 已知被利用漏洞目录
+                </h1>
+                <p class="text-gray-600 mt-1">管理和监控最新的安全漏洞信息</p>
             </div>
             
-            <div class="text-muted">
-                共 {{ total_count }} 条记录
+            <!-- 操作按钮和搜索框 -->
+            <div class="flex flex-col md:flex-row items-stretch md:items-center justify-end gap-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <a href="{{ url_for('cisa.sync_data') }}" class="btn btn-blue rounded-lg font-medium py-2 px-4 hover:bg-blue-600 transition-colors whitespace-nowrap">
+                        <svg class="inline-block mr-1" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/>
+                        </svg>
+                        同步数据
+                    </a>
+                    <span id="last-update" class="btn btn-info rounded-lg font-medium py-2 px-4 disabled whitespace-nowrap">
+                        <svg class="inline-block mr-1" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l4.75 2.85.75-1.23-4-2.37V7z" fill="currentColor"/>
+                        </svg>
+                        最后更新: 加载中...
+                    </span>
+                </div>
+                
+                <!-- 搜索框 -->
+                <div class="w-full md:w-auto">
+                    <form id="search-form" method="get" action="{{ url_for('cisa.cisa_index') }}" class="flex items-center">
+                        <input type="hidden" name="page" value="1">
+                        <input type="hidden" name="per_page" value="{{ per_page }}">
+                        <div class="relative mr-2">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <input type="text" class="form-control border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all pl-10 pr-4 py-2 rounded-lg" 
+                                   placeholder="搜索厂商、产品、漏洞名称或CVE ID" name="search" value="{{ search_query }}">
+                        </div>
+                        <button type="submit" class="btn btn-blue font-medium hover:bg-blue-600 transition-colors py-2 px-4 rounded-lg">
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            搜索
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 
+
+
     <!-- 数据表格 -->
-    <div class="table-responsive">
-        <table id="cisa-data-table" class="table table-striped table-sm">
-            <thead>
-                <tr>
-                    <th>漏洞ID</th>
-                    <th>厂商/项目</th>
-                    <th>产品</th>
-                    <th>漏洞名称</th>
-                    <th><a href="{{ url_for('cisa.cisa_index', search=search_query, page=page, per_page=per_page, sort_by='date_added', sort_order='asc' if sort_by == 'date_added' and sort_order == 'desc' else 'desc') }}">添加日期 {% if sort_by == 'date_added' %}{{ '↓' if sort_order == 'desc' else '↑' }}{% endif %}</a></th>
-                    <th>CVE ID</th>
-                    <th>截止日期</th>
-                </tr>
-            </thead>
-            <tbody id="cisa-data-body">
-                {% if data %}
-                    {% for item in data %}
-                        <tr>
-                            <td>{{ item.vuln_id }}</td>
-                            <td>{{ item.vendor_project }}</td>
-                            <td>{{ item.product or '-' }}</td>
-                            <td>{{ item.vulnerability_name }}</td>
-                            <td>{{ item.date_added.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ item.cve_id or '-' }}</td>
-                            <td>{{ item.due_date.strftime('%Y-%m-%d') if item.due_date else '-' }}</td>
-                        </tr>
-                    {% endfor %}
-                {% else %}
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+        <div class="overflow-x-auto">
+            <table id="cisa-data-table" class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-blue text-white">
                     <tr>
-                        <td colspan="7" class="text-center">暂无数据，请点击"手动同步数据"按钮获取数据</td>
+                        <th scope="col" class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">漏洞ID</th>
+                        <th scope="col" class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">厂商/项目</th>
+                        <th scope="col" class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">产品</th>
+                        <th scope="col" class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">漏洞名称</th>
+                        <th scope="col" class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">
+                            <a href="{{ url_for('cisa.cisa_index', search=search_query, page=page, per_page=per_page, sort_by='date_added', sort_order='asc' if sort_by == 'date_added' and sort_order == 'desc' else 'desc') }}" class="flex items-center hover:text-blue-200 transition-colors">
+                                添加日期
+                                {% if sort_by == 'date_added' %}
+                                    <span class="ml-1">{{ '↓' if sort_order == 'desc' else '↑' }}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">CVE ID</th>
+                        <th scope="col" class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">截止日期</th>
                     </tr>
-                {% endif %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody id="cisa-data-body" class="bg-white divide-y divide-gray-200">
+                    {% if data %}
+                        {% for item in data %}
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <a href="{{ url_for('cisa.vuln_detail', vuln_id=item.vuln_id) }}" class="text-blue font-medium hover:text-blue-600 transition-colors">
+                                        {{ item.vuln_id }}
+                                    </a>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-800">{{ item.vendor_project }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-800">{{ item.product or '-' }}</td>
+                                <td class="px-6 py-4 text-gray-800 max-w-xs">
+                                    <div class="truncate" title="{{ item.vulnerability_name }}">{{ item.vulnerability_name }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-800">{{ item.date_added.strftime('%Y-%m-%d') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-800">{{ item.cve_id or '-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-800">{{ item.due_date.strftime('%Y-%m-%d') if item.due_date else '-' }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                                <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                </svg>
+                                暂无数据，请点击"手动同步数据"按钮获取数据
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- 分页导航 -->
     {% if pagination and pagination.pages > 1 %}
-    <div class="mt-4 d-flex justify-content-center">
+    <div class="mt-4 flex justify-center">
         <nav aria-label="Page navigation">
-            <ul class="pagination">
-                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('cisa.cisa_index', search=search_query, page=pagination.prev_num, per_page=per_page) }}" aria-label="Previous">
+            <ul class="pagination flex space-x-1">
+                <li class="page-item {% if not pagination.has_prev %}opacity-50 pointer-events-none{% endif %}">
+                    <a class="page-link px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors" 
+                       href="{{ url_for('cisa.cisa_index', search=search_query, page=pagination.prev_num, per_page=per_page) if pagination.has_prev else '#' }}" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
                 
                 {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
                     {% if page_num %}
-                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
-                            <a class="page-link" href="{{ url_for('cisa.cisa_index', search=search_query, page=page_num, per_page=per_page) }}">{{ page_num }}</a>
+                        <li class="page-item">
+                            <a class="page-link px-4 py-2 rounded-lg border {% if page_num == pagination.page %}border-blue bg-blue text-white{% else %}border-gray-300 bg-white text-gray-700 hover:bg-gray-50{% endif %} transition-colors" 
+                               href="{{ url_for('cisa.cisa_index', search=search_query, page=page_num, per_page=per_page) }}">{{ page_num }}</a>
                         </li>
                     {% else %}
-                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        <li class="page-item disabled">
+                            <span class="page-link px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-500">...</span>
+                        </li>
                     {% endif %}
                 {% endfor %}
                 
-                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('cisa.cisa_index', search=search_query, page=pagination.next_num, per_page=per_page) }}" aria-label="Next">
+                <li class="page-item {% if not pagination.has_next %}opacity-50 pointer-events-none{% endif %}">
+                    <a class="page-link px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors" 
+                       href="{{ url_for('cisa.cisa_index', search=search_query, page=pagination.next_num, per_page=per_page) if pagination.has_next else '#' }}" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
@@ -110,18 +153,31 @@
     </div>
     {% endif %}
 
-    <script>
+    <!-- 每页显示条数选择器 -->
+    <div class="bg-white rounded-lg shadow-sm p-2 mt-4">
+        <div class="flex flex-row justify-end items-center">
+            <label for="per_page" class="text-gray-700 mr-2 font-medium">每页显示:</label>
+            <select id="per_page" class="form-control border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                {% for option in per_page_options %}
+                    <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+            <span class="text-gray-600 font-medium ml-4">共 {{ total_count }} 条记录</span>
+        </div>
+    </div>
+
+<script>
         // 获取当前搜索查询、页码和每页显示条数
-        var currentSearch = '{{ search_query }}';
-        var currentPage = {{ pagination.page if pagination else 1 }};
-        var currentPerPage = {{ per_page }};
-        var currentSortBy = '{{ sort_by or '' }}';
-        var currentSortOrder = '{{ sort_order or '' }}';
+        var currentSearch = "{{ search_query|default('') }}";
+        var currentPage = parseInt("{{ pagination.page if pagination else 1 }}");
+        var currentPerPage = parseInt("{{ per_page }}");
+        var currentSortBy = "{{ sort_by|default('') }}";
+        var currentSortOrder = "{{ sort_order|default('') }}";
         
         // 更新表格数据的函数
         function updateTableData() {
             // 构建API URL，包含搜索参数和分页参数
-            var apiUrl = '{{ url_for('cisa.api_data') }}';
+            var apiUrl = "{{ url_for('cisa.api_data') }}";
             var queryParams = new URLSearchParams();
             
             if (currentSearch) {
@@ -153,27 +209,50 @@
                     tableBody.innerHTML = '';
                     
                     // 更新表格内容
-                    if (data.length > 0) {
+                    if (data && data.length > 0) {
                         for (var i = 0; i < data.length; i++) {
                             var item = data[i];
                             var row = document.createElement('tr');
-                            row.innerHTML = '<td>' + item.vuln_id + '</td><td>' + item.vendor_project + '</td><td>' + (item.product || '-') + '</td><td>' + item.vulnerability_name + '</td><td>' + item.date_added + '</td><td>' + (item.cve_id || '-') + '</td><td>' + (item.due_date || '-') + '</td>';
+                            row.className = 'hover:bg-gray-50 transition-colors';
+                            row.innerHTML = '<td class="px-6 py-4 whitespace-nowrap"><a href="/cisa/vuln/' + escapeHtml(item.vuln_id) + '" class="text-blue font-medium hover:text-blue-600 transition-colors">' + escapeHtml(item.vuln_id) + '</a></td>' +
+                                           '<td class="px-6 py-4 whitespace-nowrap text-gray-800">' + escapeHtml(item.vendor_project) + '</td>' +
+                                           '<td class="px-6 py-4 whitespace-nowrap text-gray-800">' + escapeHtml(item.product || '-') + '</td>' +
+                                           '<td class="px-6 py-4 text-gray-800 max-w-xs"><div class="truncate" title="' + escapeHtml(item.vulnerability_name || '') + '">' + escapeHtml(item.vulnerability_name || '-') + '</div></td>' +
+                                           '<td class="px-6 py-4 whitespace-nowrap text-gray-800">' + escapeHtml(item.date_added) + '</td>' +
+                                           '<td class="px-6 py-4 whitespace-nowrap text-gray-800">' + escapeHtml(item.cve_id || '-') + '</td>' +
+                                           '<td class="px-6 py-4 whitespace-nowrap text-gray-800">' + escapeHtml(item.due_date || '-') + '</td>';
                             tableBody.appendChild(row);
                         }
                     } else {
                         var emptyRow = document.createElement('tr');
-                        emptyRow.innerHTML = '<td colspan="7" class="text-center">暂无数据，请点击"手动同步数据"按钮获取数据</td>';
+                        emptyRow.innerHTML = '<td colspan="7" class="px-6 py-12 text-center text-gray-500">' +
+                                            '<svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+                                            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>' +
+                                            '</svg>' +
+                                            '暂无数据，请点击"同步数据"按钮获取数据</td>';
                         tableBody.appendChild(emptyRow);
                     }
                     
                     // 更新最后更新时间
                     var now = new Date();
                     var formattedTime = now.toLocaleTimeString();
-                    lastUpdate.textContent = '最后更新: ' + formattedTime;
+                    lastUpdate.innerHTML = '<svg class="inline-block mr-1" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+                                          '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l4.75 2.85.75-1.23-4-2.37V7z" fill="currentColor"/>' +
+                                          '</svg> 最后更新: ' + formattedTime;
                 })
                 .catch(function(error) {
                     console.error('获取数据时出错:', error);
                 });
+        }
+        
+        // HTML转义函数，防止XSS攻击
+        function escapeHtml(text) {
+            if (text === null || text === undefined) {
+                return '';
+            }
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
         // 立即更新一次数据
@@ -219,9 +298,64 @@
         
         // 为分页链接添加点击事件监听
         var paginationLinks = document.querySelectorAll('.pagination a');
-        for (var j = 0; j < paginationLinks.length; j++) {
-            paginationLinks[j].addEventListener('click', function(e) {
-                // 正常的分页导航通过href跳转，这里不需要额外处理
+        for (var i = 0; i < paginationLinks.length; i++) {
+            paginationLinks[i].addEventListener('click', function(e) {
+                e.preventDefault();
+                if (this.getAttribute('href') === '#') {
+                    return;
+                }
+                
+                // 从链接中获取页码
+                var href = this.getAttribute('href');
+                var url = new URL(href, window.location.origin);
+                var page = url.searchParams.get('page');
+                var perPage = url.searchParams.get('per_page');
+                var search = url.searchParams.get('search');
+                
+                if (page) {
+                    currentPage = parseInt(page);
+                }
+                if (perPage) {
+                    currentPerPage = parseInt(perPage);
+                }
+                if (search) {
+                    currentSearch = search;
+                }
+                
+                // 更新表单并提交
+                var form = document.getElementById('search-form');
+                form.querySelector('input[name="page"]').value = currentPage;
+                form.querySelector('input[name="per_page"]').value = currentPerPage;
+                form.querySelector('input[name="search"]').value = currentSearch;
+                
+                // 添加排序参数
+                var sortByInput = form.querySelector('input[name="sort_by"]');
+                var sortOrderInput = form.querySelector('input[name="sort_order"]');
+                if (!sortByInput) {
+                    sortByInput = document.createElement('input');
+                    sortByInput.type = 'hidden';
+                    sortByInput.name = 'sort_by';
+                    form.appendChild(sortByInput);
+                }
+                if (!sortOrderInput) {
+                    sortOrderInput = document.createElement('input');
+                    sortOrderInput.type = 'hidden';
+                    sortOrderInput.name = 'sort_order';
+                    form.appendChild(sortOrderInput);
+                }
+                sortByInput.value = currentSortBy;
+                sortOrderInput.value = currentSortOrder;
+                
+                form.submit();
+            });
+        }
+        
+        // 为排序链接添加点击事件监听
+        var sortLinks = document.querySelectorAll('th a');
+        for (var j = 0; j < sortLinks.length; j++) {
+            sortLinks[j].addEventListener('click', function(e) {
+                // 让正常的链接跳转处理排序
+                // 页面刷新后会重新设置排序参数
             });
         }
     </script>

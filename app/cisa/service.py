@@ -97,6 +97,11 @@ class CisaService:
         return None
     
     @staticmethod
+    def get_by_vuln_id(vuln_id):
+        """根据漏洞ID获取单个漏洞详情"""
+        return CisaData.query.filter_by(vuln_id=vuln_id).first()
+    
+    @staticmethod
     def compare_and_update_db():
         """比较当天和前一天的CSV文件，将新增内容更新到数据库"""
         current_file = CisaService.download_csv()

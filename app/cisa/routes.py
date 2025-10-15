@@ -100,3 +100,18 @@ def api_data():
         'has_next': pagination.has_next,
         'has_prev': pagination.has_prev
     })
+
+@cisa_bp.route('/vuln/<vuln_id>')
+def vuln_detail(vuln_id):
+    """显示单个漏洞的详细信息"""
+    # 从数据库获取漏洞详情
+    cisa_data = CisaService.get_by_vuln_id(vuln_id)
+    
+    # 如果找不到漏洞，重定向到首页并显示错误消息
+    if not cisa_data:
+        from flask import redirect, url_for, flash
+        flash(f'未找到漏洞ID: {vuln_id}', 'error')
+        return redirect(url_for('cisa.cisa_index'))
+    
+    # 渲染漏洞详情页面
+    return render_template('cisa/vuln_detail.html', cisa_data=cisa_data)

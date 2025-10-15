@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">CVE 详情 - {{ cve_data.cve_id }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group mr-2">
+                <a href="{{ url_for('nvd.nvd_index') }}" class="btn btn-sm btn-outline-secondary">返回列表</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- CVE 详细信息卡片 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="row">
+                <div class="col-md-8">
+                    <h4 class="card-title">{{ cve_data.cve_id }}</h4>
+                </div>
+                <div class="col-md-4 text-right">
+                    {% if cve_data.base_severity %}
+                        <span class="badge {% if cve_data.base_severity == 'CRITICAL' %}bg-danger{% elif cve_data.base_severity == 'HIGH' %}bg-warning text-dark{% elif cve_data.base_severity == 'MEDIUM' %}bg-primary{% elif cve_data.base_severity == 'LOW' %}bg-secondary{% else %}bg-info{% endif %}" style="font-size: 1rem; padding: 0.5rem;">
+                            {{ cve_data.base_severity }}
+                        </span>
+                        {% if cve_data.base_score %}
+                            <span class="badge bg-dark ml-2" style="font-size: 1rem; padding: 0.5rem;">
+                                评分: {{ cve_data.base_score }}
+                            </span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- 基本信息 -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5 class="text-muted">发布日期</h5>
+                    <p class="text-lg">{{ cve_data.published_date.strftime('%Y-%m-%d') }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="text-muted">更新日期</h5>
+                    <p class="text-lg">{{ cve_data.last_modified_date.strftime('%Y-%m-%d') }}</p>
+                </div>
+            </div>
+
+            <!-- 描述 -->
+            <div class="mb-4">
+                <h5 class="text-muted">描述</h5>
+                <div class="p-3 border rounded bg-light">
+                    <p class="text-lg">{{ cve_data.description }}</p>
+                </div>
+            </div>
+
+            <!-- 技术信息 -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5 class="text-muted">向量字符串</h5>
+                    <div class="p-3 border rounded bg-light break-all">
+                        <code>{{ cve_data.vector_string or '-' }}</code>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="text-muted">受影响产品</h5>
+                    <div class="p-3 border rounded bg-light">
+                        <p><strong>厂商:</strong> {{ cve_data.vendor or '-' }}</p>
+                        <p><strong>产品:</strong> {{ cve_data.product or '-' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="mt-4">
+                <a href="{{ url_for('nvd.nvd_index') }}" class="btn btn-primary">返回漏洞列表</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
