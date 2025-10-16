@@ -1,4 +1,6 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}NVD 漏洞数据库{% endblock %}
 
 {% block content %}
     <!-- 引入NVD专用样式 -->
@@ -7,6 +9,11 @@
     <!-- 顶部标题区域 - 使用渐变背景美化 -->
     <div class="page-header d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center px-4">
         <h1>NVD 漏洞数据库</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <button id="sync-data-btn" class="btn btn-primary mr-2">手动同步数据</button>
+            <button id="view-logs-btn" class="btn btn-secondary">查看同步日志</button>
+            <div id="last-update" class="ml-4 text-muted small">最后更新: 加载中...</div>
+        </div>
     </div>
 
     <!-- 日志查看悬浮窗口 -->
@@ -48,106 +55,129 @@
                 <label for="end_date" class="form-label">结束日期:</label>
                 <input type="date" id="end_date" class="form-control" max="{{ today }}">
             </div>
-            <div class="col-md-6 d-flex align-items-center gap-6" style="flex-wrap: nowrap !important;">
-                <button id="confirm-sync-btn" class="btn btn-primary">确认同步</button>
-                <button class="btn btn-outline-secondary" id="sync-data-btn">手动同步数据</button>
-                <button class="btn btn-outline-secondary" id="view-logs-btn">查看同步日志</button>
-                <span id="last-update" class="btn btn-outline-info disabled ml-auto">最后更新: 加载中...</span>
+            <div class="col-md-2">
+                <label>&nbsp;</label>
+                <button id="confirm-sync-btn" class="btn btn-success w-100">确认同步</button>
             </div>
         </div>
     </div>
 
-
-
     <!-- 数据表格 -->
-    <div class="table-responsive">
-        <table id="nvd-data-table" class="table table-striped table-sm">
-            <thead>
-                <tr>
-                    <th>CVE ID</th>
-                    <th><a href="{{ url_for('nvd.nvd_index', search=search_query, page=page, per_page=per_page, sort_by='published_date', sort_order='asc' if sort_by == 'published_date' and sort_order == 'desc' else 'desc') }}">发布日期 {% if sort_by == 'published_date' %}{{ '↓' if sort_order == 'desc' else '↑' }}{% endif %}</a></th>
-                    <th><a href="{{ url_for('nvd.nvd_index', search=search_query, page=page, per_page=per_page, sort_by='last_modified_date', sort_order='asc' if sort_by == 'last_modified_date' and sort_order == 'desc' else 'desc') }}">更新日期 {% if sort_by == 'last_modified_date' %}{{ '↓' if sort_order == 'desc' else '↑' }}{% endif %}</a></th>
-                    <th>描述</th>
-                    <th><a href="{{ url_for('nvd.nvd_index', search=search_query, page=page, per_page=per_page, sort_by='base_score', sort_order='asc' if sort_by == 'base_score' and sort_order == 'desc' else 'desc') }}">评分 {% if sort_by == 'base_score' %}{{ '↓' if sort_order == 'desc' else '↑' }}{% endif %}</a></th>
-                    <th>严重程度</th>
-                    <th>向量字符串</th>
-                    <th>厂商</th>
-                    <th>产品</th>
-                </tr>
-            </thead>
-            <tbody id="nvd-data-body">
-                {% if data %}
-                    {% for item in data %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
                         <tr>
-                            <td><a href="{{ url_for('nvd.cve_detail', cve_id=item.cve_id) }}" class="text-primary hover:underline">{{ item.cve_id }}</a></td>
-                            <td>{{ item.published_date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ item.last_modified_date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ item.description[:100] }}{% if item.description|length > 100 %}...{% endif %}</td>
-                            <td>{{ item.base_score if item.base_score else '-' }}</td>
-                            <td>
-                                {% if item.base_severity %}
-                                    <span class="badge {% if item.base_severity == 'CRITICAL' %}bg-danger{% elif item.base_severity == 'HIGH' %}bg-warning text-dark{% elif item.base_severity == 'MEDIUM' %}bg-primary{% elif item.base_severity == 'LOW' %}bg-secondary{% else %}bg-info{% endif %}">
-                                        {{ item.base_severity }}
-                                    </span>
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>{{ item.vector_string[:30] }}{% if item.vector_string|length > 30 %}...{% endif %}</td>
-                            <td>{{ item.vendor or '-' }}</td>
-                            <td>{{ item.product or '-' }}</td>
+                            <th>CVE ID</th>
+                            <th>发布日期</th>
+                            <th>最后更新日期</th>
+                            <th>描述</th>
+                            <th>基础评分</th>
+                            <th>严重性</th>
+                            <th>向量字符串</th>
+                            <th>厂商</th>
+                            <th>产品</th>
                         </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="9" class="text-center">暂无数据，请点击"手动同步数据"按钮获取数据</td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
+                    </thead>
+                    <tbody id="nvd-data-body">
+                        {% for item in data %}
+                            <tr>
+                                <td><a href="/nvd/cve/{{ item.cve_id }}" class="text-primary hover:underline">{{ item.cve_id }}</a></td>
+                                <td>{{ item.published_date }}</td>
+                                <td>{{ item.last_modified_date }}</td>
+                                <td>{{ item.description[:100] }}{% if item.description|length > 100 %}...{% endif %}</td>
+                                <td>{{ item.base_score or '-' }}</td>
+                                <td>
+                                    {% if item.base_severity %}
+                                        <span class="badge 
+                                            {% if item.base_severity == 'CRITICAL' %}bg-danger
+                                            {% elif item.base_severity == 'HIGH' %}bg-warning text-dark
+                                            {% elif item.base_severity == 'MEDIUM' %}bg-primary
+                                            {% elif item.base_severity == 'LOW' %}bg-secondary
+                                            {% else %}bg-info
+                                            {% endif %}">
+                                            {{ item.base_severity }}
+                                        </span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.vector_string[:30] }}{% if item.vector_string|length > 30 %}...{% endif %}</td>
+                                <td>{{ item.vendor or '-' }}</td>
+                                <td>{{ item.product or '-' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- 分页导航 -->
-    {% if pagination and pagination.pages > 1 %}
-    <div class="mt-4 d-flex justify-content-center">
-        <nav aria-label="Page navigation">
-            <ul class="pagination">
-                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('nvd.nvd_index', search=search_query, page=pagination.prev_num, per_page=per_page) }}" aria-label="Previous">
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('nvd.nvd_index', page=pagination.prev_num, per_page=per_page, search=search_query) }}" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
+                        <span class="sr-only">Previous</span>
                     </a>
                 </li>
-                
-                {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
-                    {% if page_num %}
-                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
-                            <a class="page-link" href="{{ url_for('nvd.nvd_index', search=search_query, page=page_num, per_page=per_page) }}">{{ page_num }}</a>
+            {% else %}
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                        <span class="sr-only">Previous</span>
+                    </a>
+                </li>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num == pagination.page %}
+                        <li class="page-item active">
+                            <a class="page-link" href="#">{{ page_num }} <span class="sr-only">(current)</span></a>
                         </li>
                     {% else %}
-                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('nvd.nvd_index', page=page_num, per_page=per_page, search=search_query) }}">{{ page_num }}</a>
+                        </li>
                     {% endif %}
-                {% endfor %}
-                
-                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                    <a class="page-link" href="{{ url_for('nvd.nvd_index', search=search_query, page=pagination.next_num, per_page=per_page) }}" aria-label="Next">
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('nvd.nvd_index', page=pagination.next_num, per_page=per_page, search=search_query) }}" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
+                        <span class="sr-only">Next</span>
                     </a>
                 </li>
-            </ul>
-        </nav>
-    </div>
-    {% endif %}
+            {% else %}
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                        <span class="sr-only">Next</span>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
 
-    <!-- 每页显示条数选择器（移到页面底部） -->
-    <div class="mt-4 d-flex justify-content-center">
-        <div class="d-flex items-center">
+    <!-- 每页显示条数选择器 -->
+    <div class="text-center mt-2 mb-4">
+        <div class="form-inline justify-content-center">
             <label for="per_page" class="mr-2">每页显示:</label>
-            <select id="per_page" class="form-control-sm">
-                {% for option in per_page_options %}
-                    <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
-                {% endfor %}
+            <select id="per_page" class="form-control form-control-sm mr-2">
+                <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
             </select>
-            <span class="ml-4 text-muted">共 {{ total_count }} 条记录</span>
+            <span class="text-muted small">总共 {{ total_items }} 条记录</span>
         </div>
     </div>
 
@@ -376,20 +406,31 @@
                     return response.json();
                 })
                 .then(function(logs) {
+                    console.log('获取到的日志数据:', logs);
                     if (logs && logs.length > 0) {
-                        let logsHTML = '<ul class="list-unstyled">';
-                        for (let i = 0; i < logs.length; i++) {
-                            const log = logs[i];
+                        // 统计不同类型的日志数量
+                        const autoLogsCount = logs.filter(log => log.action_type === 'auto').length;
+                        const manualLogsCount = logs.filter(log => log.action_type === 'manual').length;
+                        
+                        let logsHTML = '<div class="mb-4 text-sm text-gray-500">共 ' + logs.length + ' 条日志 (自动同步: ' + autoLogsCount + ' 条, 手动同步: ' + manualLogsCount + ' 条)</div>';
+                        logsHTML += '<ul class="list-unstyled">';
+                        
+                        // 按时间戳排序（确保最新的在前面）
+                        const sortedLogs = logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                        
+                        for (let i = 0; i < sortedLogs.length; i++) {
+                            const log = sortedLogs[i];
                             const actionType = log.action_type === 'auto' ? '自动同步' : '手动同步';
                             const actionClass = log.action_type === 'auto' ? 'badge-secondary' : 'badge-primary';
                             const dateRange = log.start_date && log.end_date 
-                                ? ' <span class="text-muted">(</span><span class="text-info">' + log.start_date + '</span> <span class="text-muted">至</span> <span class="text-info">' + log.end_date + '</span><span class="text-muted">)</span>' 
+                                ? ' <small class="text-muted">(</small><small class="text-info">' + log.start_date + '</small> <small class="text-muted">至</small> <small class="text-info">' + log.end_date + '</small><small class="text-muted">)</small>' 
                                 : '';
                             
-                            logsHTML += '<li class="p-4 bg-light rounded border border-gray-200 mb-4 shadow-sm">';
+                            // 使用标准Bootstrap样式
+                            logsHTML += '<li class="p-3 bg-light rounded border border-gray-200 mb-3 shadow-sm">';
                             logsHTML += '<div class="text-sm text-gray-500 mb-2">' + log.timestamp + '</div>';
-                            logsHTML += '<div class="flex flex-wrap items-center gap-3">';
-                            logsHTML += '<span class="badge ' + actionClass + ' px-3 py-1">' + actionType + '</span>';
+                            logsHTML += '<div class="d-flex flex-wrap align-items-center gap-2">';
+                            logsHTML += '<span class="badge ' + actionClass + ' px-2 py-1">' + actionType + '</span>';
                             logsHTML += '<span class="text-gray-800">完成，新增 <span class="font-bold text-primary">' + log.count + '</span> 条记录</span>';
                             logsHTML += dateRange;
                             logsHTML += '</div>';
