@@ -112,27 +112,48 @@ class NvdService:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     reader = csv.DictReader(f, delimiter='\t')
                     imported_count = 0
+                    skipped_count = 0
+                    duplicate_count = 0
                     
                     for row in reader:
-                        # 检查是否已存在
-                        existing = NvdData.query.filter_by(cve_id=row['CVE ID']).first()
-                        if not existing:
-                            # 创建新记录
-                            nvd_data = NvdData(
-                                cve_id=row['CVE ID'],
-                                published_date=datetime.strptime(row['Published Date'], '%Y-%m-%d'),
-                                last_modified_date=datetime.strptime(row['Last Modified Date'], '%Y-%m-%d'),
-                                description=row['Description'],
-                                base_score=float(row['Base Score']) if row['Base Score'] else None,
-                                base_severity=row['Base Severity'],
-                                vector_string=row['Vector String'],
-                                vendor=row['Vendor'],
-                                product=row['Product']
-                            )
-                            db.session.add(nvd_data)
-                            imported_count += 1
-                            
+                        try:
+                            # 使用no_autoflush确保先检查记录是否存在
+                            with db.session.no_autoflush:
+                                # 检查是否已存在
+                                existing = NvdData.query.filter_by(cve_id=row['CVE ID']).first()
+                                if not existing:
+                                    # 创建新记录
+                                    nvd_data = NvdData(
+                                        cve_id=row['CVE ID'],
+                                        published_date=datetime.strptime(row['Published Date'], '%Y-%m-%d'),
+                                        last_modified_date=datetime.strptime(row['Last Modified Date'], '%Y-%m-%d'),
+                                        description=row['Description'],
+                                        base_score=float(row['Base Score']) if row['Base Score'] else None,
+                                        base_severity=row['Base Severity'],
+                                        vector_string=row['Vector String'],
+                                        vendor=row['Vendor'],
+                                        product=row['Product']
+                                    )
+                                    db.session.add(nvd_data)
+                                    imported_count += 1
+                                    
+                                    # 每100条记录提交一次
+                                    if imported_count % 100 == 0:
+                                        db.session.commit()
+                                else:
+                                    duplicate_count += 1
+                                    print(f"记录 {row['CVE ID']} 已存在，跳过")
+                        except Exception as row_error:
+                            # 记录错误但继续处理其他记录
+                            print(f"处理记录 {row.get('CVE ID', '未知')} 时出错: {str(row_error)}")
+                            skipped_count += 1
+                            # 清除当前会话中的错误记录
+                            db.session.rollback()
+                            continue
+                    
+                    # 提交剩余的记录
                     db.session.commit()
+                    print(f"成功导入 {imported_count} 条记录，跳过 {skipped_count} 条错误记录，{duplicate_count} 条重复记录")
                     return imported_count
         except Exception as e:
             db.session.rollback()
@@ -228,13 +249,24 @@ class NvdService:
                         if not cve_id or not published_date_str or not last_modified_date_str:
                             continue
                         
-                        # 解析日期
-                        published_date = datetime.strptime(published_date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
-                        last_modified_date = datetime.strptime(last_modified_date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
+                        # 解析日期 - 适配NVD API返回的格式
+                        try:
+                            # 尝试解析带Z的格式
+                            published_date = datetime.strptime(published_date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
+                            last_modified_date = datetime.strptime(last_modified_date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
+                        except ValueError:
+                            # 如果失败，尝试解析不带Z的格式
+                            published_date = datetime.strptime(published_date_str, '%Y-%m-%dT%H:%M:%S.%f')
+                            last_modified_date = datetime.strptime(last_modified_date_str, '%Y-%m-%dT%H:%M:%S.%f')
                         
-                        # 获取描述
+                        # 获取描述并清理特殊Unicode字符
                         descriptions = cve.get("descriptions", [])
                         description = descriptions[0].get("value", "") if descriptions else ""
+                        # 替换可能导致MySQL编码问题的特殊字符
+                        description = description.replace('‑', '-')  # 替换非标准连字符
+                        description = description.replace('–', '-')  # 替换长连字符
+                        description = description.replace('—', '-')  # 替换破折号
+                        # 可以根据需要添加更多的字符替换规则
                         
                         # 获取评分信息
                         base_score = None
@@ -326,8 +358,8 @@ class NvdService:
 # 定时任务相关函数
 def run_scheduled_tasks():
     """运行所有定时任务"""
-    # 设置每天凌晨0点同步最新数据
-    schedule.every().day.at("00:00").do(sync_daily_data)
+    # 设置每6小时同步一次最新数据
+    schedule.every(6).hours.do(sync_daily_data)
     
     # 初始同步
     sync_daily_data()

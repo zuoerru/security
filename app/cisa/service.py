@@ -259,8 +259,8 @@ class CisaService:
 # 定时任务相关功能
 def run_scheduled_tasks():
     """运行定时任务"""
-    # 每天0点执行CISA数据更新
-    schedule.every().day.at("00:00").do(CisaService.compare_and_update_db)
+    # 每6小时执行CISA数据更新
+    schedule.every(6).hours.do(CisaService.compare_and_update_db)
     
     # 初始运行一次，确保有数据
     CisaService.compare_and_update_db()
