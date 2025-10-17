@@ -103,7 +103,7 @@
                                         -
                                     {% endif %}
                                 </td>
-                                <td>{{ item.vector_string[:30] }}{% if item.vector_string|length > 30 %}...{% endif %}</td>
+                                <td>{% if item.vector_string %}{{ item.vector_string[:30] }}{% if item.vector_string|length > 30 %}...{% endif %}{% else %}-{% endif %}</td>
                                 <td>{{ item.vendor or '-' }}</td>
                                 <td>{{ item.product or '-' }}</td>
                             </tr>

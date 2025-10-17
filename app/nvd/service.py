@@ -361,8 +361,7 @@ def run_scheduled_tasks():
     # 设置每6小时同步一次最新数据
     schedule.every(6).hours.do(sync_daily_data)
     
-    # 初始同步
-    sync_daily_data()
+    # 不再在这里进行初始同步，改为在延迟启动函数中执行
     
     # 循环执行调度任务
     while True:
@@ -385,10 +384,37 @@ def sync_daily_data():
     except Exception as e:
         print(f"NVD数据同步任务执行失败: {str(e)}")
 
+def sync_on_startup():
+    """服务启动时的延迟同步函数"""
+    try:
+        # 延迟1分钟再执行同步
+        print("服务启动后将在1分钟后开始同步NVD数据...")
+        time.sleep(60)
+        
+        # 执行同步操作
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=1)
+        
+        print(f"[延迟同步] 开始同步NVD数据: {start_date.strftime('%Y-%m-%d')} 至 {end_date.strftime('%Y-%m-%d')}")
+        imported_count = NvdService.sync_and_save_tsv(start_date=start_date, end_date=end_date)
+        
+        # 记录自动同步日志（已包含在sync_and_save_tsv中）
+        sync_log_service.add_log('startup', imported_count, start_date, end_date)
+        
+        print(f"[延迟同步] NVD数据同步完成，新增 {imported_count} 条记录")
+    except Exception as e:
+        print(f"[延迟同步] NVD数据同步任务执行失败: {str(e)}")
+
 def start_scheduler(app):
     """启动调度器"""
     NvdService.set_app(app)
     
+    # 启动定时任务线程
     scheduler_thread = Thread(target=run_scheduled_tasks, daemon=True)
     scheduler_thread.start()
     print("NVD数据同步调度器已启动")
+    
+    # 启动延迟同步线程（服务启动后1分钟执行）
+    startup_sync_thread = Thread(target=sync_on_startup, daemon=True)
+    startup_sync_thread.start()
+    print("启动时延迟同步线程已启动，将在1分钟后执行同步操作")
