@@ -42,11 +42,12 @@ def cisa_index():
 @cisa_bp.route('/sync')
 def sync_data():
     """手动触发数据同步"""
+    from flask import redirect, url_for
     success = CisaService.compare_and_update_db()
     if success:
-        return "数据同步成功"
+        return redirect(url_for('cisa.cisa_index'))
     else:
-        return "数据同步失败"
+        return redirect(url_for('cisa.cisa_index'))
 
 @cisa_bp.route('/init-db')
 def init_db():
