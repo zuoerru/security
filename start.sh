@@ -24,4 +24,4 @@ nohup python run.py > app.log 2>&1 &
 echo "安全管理系统已启动在端口 8010"
 echo "日志文件: app.log"
 echo "可以通过 http://服务器IP:8010 访问系统"
-echo "CISA模块已配置定时任务，每天0点自动同步数据"
+echo "CISA模块已配置定时任务，每6小时自动同步数据"

@@ -7,7 +7,7 @@ import schedule
 import time
 from threading import Thread
 from flask import current_app
-from .models import CisaData
+from .models import CisaData, CisaLog
 from app import db
 
 # 存储应用实例的引用
@@ -102,10 +102,19 @@ class CisaService:
         return CisaData.query.filter_by(vuln_id=vuln_id).first()
     
     @staticmethod
-    def compare_and_update_db():
-        """比较当天和前一天的CSV文件，将新增内容更新到数据库"""
+    def compare_and_update_db(sync_type='auto'):
+        """比较当天和前一天的CSV文件，将新增内容更新到数据库，并记录同步日志"""
+        affected_count = 0
+        message = ""
+        status = "success"
+        # 默认使用auto表示自动同步，手动调用时传入manual
+        
         current_file = CisaService.download_csv()
         if not current_file:
+            message = "下载CSV文件失败"
+            status = "failure"
+            # 记录失败日志
+            CisaService._log_sync_result(status, message, affected_count)
             return False
         
         previous_file = CisaService.get_previous_day_file()
@@ -140,9 +149,10 @@ class CisaService:
                 # 如果没有前一天的文件，所有内容都视为新增
                 new_entries = current_df
             
-            # 将新增内容导入数据库
-            if not new_entries.empty:
-                with _app.app_context():
+            # 使用当前应用上下文或_app上下文
+            try:
+                # 尝试直接使用当前上下文（如果存在）
+                if not new_entries.empty:
                     for _, row in new_entries.iterrows():
                         # 映射CSV列到数据库字段 - 使用实际的CSV列名
                         cisa_data = CisaData(
@@ -159,16 +169,109 @@ class CisaService:
                         db.session.add(cisa_data)
                     
                     db.session.commit()
-                    print(f"成功导入 {len(new_entries)} 条新记录到数据库")
-            else:
-                print("没有发现新增记录")
-            
-            return True
+                    affected_count = len(new_entries)
+                    message = f"成功导入 {affected_count} 条新记录到数据库"
+                    print(message)
+                else:
+                    message = "没有发现新增记录"
+                    print(message)
+                
+                # 记录成功日志
+                CisaService._log_sync_result(status, message, affected_count, sync_type)
+                return True
+            except RuntimeError:
+                # 如果没有应用上下文，则使用_app上下文（定时任务情况）
+                with _app.app_context():
+                    if not new_entries.empty:
+                        for _, row in new_entries.iterrows():
+                            # 映射CSV列到数据库字段 - 使用实际的CSV列名
+                            cisa_data = CisaData(
+                                vuln_id=CisaService._get_value(row, ['cveID', 'CVE ID', 'CVE'], str),  # 使用cveID作为vuln_id
+                                vendor_project=CisaService._get_value(row, ['vendorProject', 'Vendor/Project', 'vendor'], str),
+                                product=CisaService._get_value(row, ['product', 'Product'], str),
+                                vulnerability_name=CisaService._get_value(row, ['vulnerabilityName', 'Vulnerability Name'], str),
+                                date_added=CisaService._parse_date(CisaService._get_value(row, ['dateAdded', 'Date Added'], str)),
+                                short_description=CisaService._get_value(row, ['shortDescription', 'Short Description'], str),
+                                required_action=CisaService._get_value(row, ['requiredAction', 'Required Action'], str),
+                                due_date=CisaService._parse_date(CisaService._get_value(row, ['dueDate', 'Due Date'], str)),
+                                cve_id=CisaService._get_value(row, ['cveID', 'CVE ID', 'CVE'], str)
+                            )
+                            db.session.add(cisa_data)
+                        
+                        db.session.commit()
+                        affected_count = len(new_entries)
+                        message = f"成功导入 {affected_count} 条新记录到数据库"
+                        print(message)
+                    else:
+                        message = "没有发现新增记录"
+                        print(message)
+                    
+                    # 记录成功日志
+                    CisaService._log_sync_result(status, message, affected_count, sync_type)
+                    return True
         except Exception as e:
-            with _app.app_context():
+            error_msg = f"比较和更新数据库失败: {str(e)}"
+            print(error_msg)
+            status = "failure"
+            message = error_msg
+            # 尝试使用当前上下文回滚
+            try:
                 db.session.rollback()
-            print(f"比较和更新数据库失败: {str(e)}")
+                CisaService._log_sync_result(status, message, affected_count, sync_type)
+            except RuntimeError:
+                # 如果没有应用上下文，则使用_app上下文
+                with _app.app_context():
+                    db.session.rollback()
+                    CisaService._log_sync_result(status, message, affected_count, sync_type)
             return False
+    
+    @staticmethod
+    def _log_sync_result(status, message, affected_count, sync_type='manual'):
+        """记录同步操作的结果到数据库日志表"""
+        try:
+            # 尝试直接使用当前上下文（如果存在）
+            log_entry = CisaLog(
+                status=status,
+                message=message,
+                affected_count=affected_count,
+                sync_type=sync_type
+            )
+            db.session.add(log_entry)
+            db.session.commit()
+        except RuntimeError:
+            # 如果没有应用上下文，则使用_app上下文（定时任务情况）
+            try:
+                with _app.app_context():
+                    log_entry = CisaLog(
+                        status=status,
+                        message=message,
+                        affected_count=affected_count,
+                        sync_type=sync_type
+                    )
+                    db.session.add(log_entry)
+                    db.session.commit()
+            except Exception as e:
+                print(f"记录同步日志失败（使用_app上下文）: {str(e)}")
+                with _app.app_context():
+                    db.session.rollback()
+        except Exception as e:
+            print(f"记录同步日志失败: {str(e)}")
+            try:
+                db.session.rollback()
+            except:
+                pass
+    
+    @staticmethod
+    def get_sync_logs(page=1, per_page=20):
+        """获取同步日志记录，支持分页"""
+        # 按时间倒序排列，最新的记录在前
+        query = CisaLog.query.order_by(CisaLog.sync_time.desc())
+        return query.paginate(page=page, per_page=per_page, error_out=False)
+    
+    @staticmethod
+    def get_logs_count():
+        """获取日志记录总数"""
+        return CisaLog.query.count()
     
     @staticmethod
     def _get_value(row, possible_columns, value_type=str):
@@ -260,21 +363,25 @@ class CisaService:
 def run_scheduled_tasks():
     """运行定时任务"""
     # 每6小时执行CISA数据更新
-    schedule.every(6).hours.do(CisaService.compare_and_update_db)
-    
-    # 初始运行一次，确保有数据
-    CisaService.compare_and_update_db()
+    schedule.every(6).hours.do(CisaService.compare_and_update_db, sync_type='auto')
     
     # 持续运行调度器
     while True:
         schedule.run_pending()
-        time.sleep(60)  # 每分钟检查一次
+        time.sleep(60)
 
 def start_scheduler(app):
     """在后台线程中启动调度器"""
     # 设置应用实例引用
     set_app(app)
     
+    # 启动定时任务线程
     scheduler_thread = Thread(target=run_scheduled_tasks, daemon=True)
     scheduler_thread.start()
     print("CISA数据同步调度器已启动")
+    print("CISA模块已配置定时任务，每6小时自动同步数据")
+    
+    # 初始运行一次，避免启动后长时间不更新
+    Thread(target=lambda: time.sleep(60) or CisaService.compare_and_update_db(sync_type='auto')).start()
+    print("服务启动后将在1分钟后开始同步CISA数据...")
+    print("启动时延迟同步线程已启动，将在1分钟后执行同步操作")
