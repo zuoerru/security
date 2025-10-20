@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -154,19 +155,56 @@ class CisaService:
                 # 尝试直接使用当前上下文（如果存在）
                 if not new_entries.empty:
                     for _, row in new_entries.iterrows():
-                        # 映射CSV列到数据库字段 - 使用实际的CSV列名
-                        cisa_data = CisaData(
-                            vuln_id=CisaService._get_value(row, ['cveID', 'CVE ID', 'CVE'], str),  # 使用cveID作为vuln_id
-                            vendor_project=CisaService._get_value(row, ['vendorProject', 'Vendor/Project', 'vendor'], str),
-                            product=CisaService._get_value(row, ['product', 'Product'], str),
-                            vulnerability_name=CisaService._get_value(row, ['vulnerabilityName', 'Vulnerability Name'], str),
-                            date_added=CisaService._parse_date(CisaService._get_value(row, ['dateAdded', 'Date Added'], str)),
-                            short_description=CisaService._get_value(row, ['shortDescription', 'Short Description'], str),
-                            required_action=CisaService._get_value(row, ['requiredAction', 'Required Action'], str),
-                            due_date=CisaService._parse_date(CisaService._get_value(row, ['dueDate', 'Due Date'], str)),
-                            cve_id=CisaService._get_value(row, ['cveID', 'CVE ID', 'CVE'], str)
-                        )
-                        db.session.add(cisa_data)
+                        # 获取vuln_id
+                        vuln_id = CisaService._get_value(row, ['cveID', 'CVE ID', 'CVE'], str)
+                        
+                        # 检查记录是否已存在
+                        existing_record = CisaData.query.filter_by(vuln_id=vuln_id).first()
+                        
+                        if existing_record:
+                            # 如果记录存在，则更新
+                            existing_record.vendor_project = CisaService._get_value(row, ['vendorProject', 'Vendor/Project', 'vendor'], str)
+                            existing_record.product = CisaService._get_value(row, ['product', 'Product'], str)
+                            existing_record.vulnerability_name = CisaService._get_value(row, ['vulnerabilityName', 'Vulnerability Name'], str)
+                            existing_record.date_added = CisaService._parse_date(CisaService._get_value(row, ['dateAdded', 'Date Added'], str))
+                            
+                            # 对描述字段应用额外的安全处理
+                            raw_description = CisaService._get_value(row, ['shortDescription', 'Short Description'], str)
+                            existing_record.short_description = CisaService._ensure_safe_description(raw_description)
+                            
+                            existing_record.required_action = CisaService._get_value(row, ['requiredAction', 'Required Action'], str)
+                            existing_record.due_date = CisaService._parse_date(CisaService._get_value(row, ['dueDate', 'Due Date'], str))
+                            existing_record.cve_id = CisaService._get_value(row, ['cveID', 'CVE ID', 'CVE'], str)
+                            existing_record.updated_at = datetime.utcnow()
+                        else:
+                            # 如果记录不存在，则创建新记录
+                            # 获取基础值并应用特殊处理
+                            vendor_project = CisaService._get_value(row, ['vendorProject', 'Vendor/Project', 'vendor'], str)
+                            product = CisaService._get_value(row, ['product', 'Product'], str)
+                            vulnerability_name = CisaService._get_value(row, ['vulnerabilityName', 'Vulnerability Name'], str)
+                            date_added = CisaService._parse_date(CisaService._get_value(row, ['dateAdded', 'Date Added'], str))
+                            
+                            # 对描述字段应用额外的安全处理
+                            raw_description = CisaService._get_value(row, ['shortDescription', 'Short Description'], str)
+                            short_description = CisaService._ensure_safe_description(raw_description)
+                            
+                            required_action = CisaService._get_value(row, ['requiredAction', 'Required Action'], str)
+                            due_date = CisaService._parse_date(CisaService._get_value(row, ['dueDate', 'Due Date'], str))
+                            cve_id = CisaService._get_value(row, ['cveID', 'CVE ID', 'CVE'], str)
+                            
+                            # 创建CisaData对象
+                            cisa_data = CisaData(
+                                vuln_id=vuln_id,
+                                vendor_project=vendor_project,
+                                product=product,
+                                vulnerability_name=vulnerability_name,
+                                date_added=date_added,
+                                short_description=short_description,
+                                required_action=required_action,
+                                due_date=due_date,
+                                cve_id=cve_id
+                            )
+                            db.session.add(cisa_data)
                     
                     db.session.commit()
                     affected_count = len(new_entries)
@@ -184,19 +222,56 @@ class CisaService:
                 with _app.app_context():
                     if not new_entries.empty:
                         for _, row in new_entries.iterrows():
-                            # 映射CSV列到数据库字段 - 使用实际的CSV列名
-                            cisa_data = CisaData(
-                                vuln_id=CisaService._get_value(row, ['cveID', 'CVE ID', 'CVE'], str),  # 使用cveID作为vuln_id
-                                vendor_project=CisaService._get_value(row, ['vendorProject', 'Vendor/Project', 'vendor'], str),
-                                product=CisaService._get_value(row, ['product', 'Product'], str),
-                                vulnerability_name=CisaService._get_value(row, ['vulnerabilityName', 'Vulnerability Name'], str),
-                                date_added=CisaService._parse_date(CisaService._get_value(row, ['dateAdded', 'Date Added'], str)),
-                                short_description=CisaService._get_value(row, ['shortDescription', 'Short Description'], str),
-                                required_action=CisaService._get_value(row, ['requiredAction', 'Required Action'], str),
-                                due_date=CisaService._parse_date(CisaService._get_value(row, ['dueDate', 'Due Date'], str)),
-                                cve_id=CisaService._get_value(row, ['cveID', 'CVE ID', 'CVE'], str)
-                            )
-                            db.session.add(cisa_data)
+                            # 获取vuln_id
+                            vuln_id = CisaService._get_value(row, ['cveID', 'CVE ID', 'CVE'], str)
+                            
+                            # 检查记录是否已存在
+                            existing_record = CisaData.query.filter_by(vuln_id=vuln_id).first()
+                            
+                            if existing_record:
+                                # 如果记录存在，则更新
+                                existing_record.vendor_project = CisaService._get_value(row, ['vendorProject', 'Vendor/Project', 'vendor'], str)
+                                existing_record.product = CisaService._get_value(row, ['product', 'Product'], str)
+                                existing_record.vulnerability_name = CisaService._get_value(row, ['vulnerabilityName', 'Vulnerability Name'], str)
+                                existing_record.date_added = CisaService._parse_date(CisaService._get_value(row, ['dateAdded', 'Date Added'], str))
+                                
+                                # 对描述字段应用额外的安全处理
+                                raw_description = CisaService._get_value(row, ['shortDescription', 'Short Description'], str)
+                                existing_record.short_description = CisaService._ensure_safe_description(raw_description)
+                                
+                                existing_record.required_action = CisaService._get_value(row, ['requiredAction', 'Required Action'], str)
+                                existing_record.due_date = CisaService._parse_date(CisaService._get_value(row, ['dueDate', 'Due Date'], str))
+                                existing_record.cve_id = CisaService._get_value(row, ['cveID', 'CVE ID', 'CVE'], str)
+                                existing_record.updated_at = datetime.utcnow()
+                            else:
+                                # 如果记录不存在，则创建新记录
+                                # 获取基础值并应用特殊处理
+                                vendor_project = CisaService._get_value(row, ['vendorProject', 'Vendor/Project', 'vendor'], str)
+                                product = CisaService._get_value(row, ['product', 'Product'], str)
+                                vulnerability_name = CisaService._get_value(row, ['vulnerabilityName', 'Vulnerability Name'], str)
+                                date_added = CisaService._parse_date(CisaService._get_value(row, ['dateAdded', 'Date Added'], str))
+                                
+                                # 对描述字段应用额外的安全处理
+                                raw_description = CisaService._get_value(row, ['shortDescription', 'Short Description'], str)
+                                short_description = CisaService._ensure_safe_description(raw_description)
+                                
+                                required_action = CisaService._get_value(row, ['requiredAction', 'Required Action'], str)
+                                due_date = CisaService._parse_date(CisaService._get_value(row, ['dueDate', 'Due Date'], str))
+                                cve_id = CisaService._get_value(row, ['cveID', 'CVE ID', 'CVE'], str)
+                                
+                                # 创建CisaData对象
+                                cisa_data = CisaData(
+                                    vuln_id=vuln_id,
+                                    vendor_project=vendor_project,
+                                    product=product,
+                                    vulnerability_name=vulnerability_name,
+                                    date_added=date_added,
+                                    short_description=short_description,
+                                    required_action=required_action,
+                                    due_date=due_date,
+                                    cve_id=cve_id
+                                )
+                                db.session.add(cisa_data)
                         
                         db.session.commit()
                         affected_count = len(new_entries)
@@ -275,17 +350,46 @@ class CisaService:
     
     @staticmethod
     def _get_value(row, possible_columns, value_type=str):
-        """尝试从DataFrame行中获取值，支持多种可能的列名"""
+        """尝试从DataFrame行中获取值，支持多种可能的列名，并处理字符串编码"""
         for col in possible_columns:
             if col in row.index:
                 val = row[col]
                 if pd.isna(val):
                     return None if value_type == str else value_type()
                 try:
+                    # 如果是字符串类型，进行编码处理
+                    if value_type == str and isinstance(val, str):
+                        # 1. 首先导入re模块
+                        import re
+                        # 2. 更彻底地处理字符编码问题
+                        # 只保留ASCII字符和常用可打印字符
+                        val = ''.join(char if 32 <= ord(char) <= 126 or char in '\t\n\r' else '?' for char in val)
+                        # 3. 完全移除UTF-8替换字符和其他潜在问题字符
+                        val = re.sub(r'[\xEF\xBF\xBD]', '', val)  # 完全移除替换字符
+                        # 4. 使用ASCII编码并忽略错误字符
+                        val = val.encode('ascii', errors='ignore').decode('ascii')
+                        # 5. 限制字符串长度（给数据库字段更多余量）
+                        if len(val) > 800:  # 进一步减少长度限制
+                            val = val[:797] + '...'
+                        # 6. 清理空格
+                        val = re.sub(r'\s+', ' ', val).strip()
                     return value_type(val)
-                except:
-                    return str(val) if value_type == str else None
+                except Exception as e:
+                    # 如果转换失败，返回空字符串或安全默认值
+                    return '' if value_type == str else value_type()
         return None if value_type == str else value_type()
+    
+    @staticmethod
+    def _ensure_safe_description(description):
+        """确保描述字段安全，只保留常见的可打印字符"""
+        if not description or not isinstance(description, str):
+            return ''
+        
+        # 仅保留字母、数字、常见标点符号和空格
+        safe_chars = re.sub(r'[^a-zA-Z0-9\s\.,!\?\-\(\)\[\]\{\}"\'\:\;\/\_\@\#\$\%\^\&\*\+\=]', '', str(description))
+        
+        # 限制长度
+        return safe_chars[:700]
     
     @staticmethod
     def _parse_date(date_str):

@@ -43,7 +43,7 @@ def cisa_index():
 def sync_data():
     """手动触发数据同步"""
     from flask import redirect, url_for
-    success = CisaService.compare_and_update_db()
+    success = CisaService.compare_and_update_db(sync_type='manual')
     if success:
         return redirect(url_for('cisa.cisa_index'))
     else:
@@ -51,11 +51,11 @@ def sync_data():
 
 @cisa_bp.route('/init-db')
 def init_db():
-    """初始化数据库表"""
+    """初始化数据库表，包括新增的cisalog表"""
     from app import db
-    from .models import CisaData
+    from .models import CisaData, CisaLog
     db.create_all()
-    return "CISA数据库表已初始化"
+    return "CISA数据库表已初始化，包括同步日志表cisalog"
 
 @cisa_bp.route('/api/data')
 def api_data():
@@ -116,3 +116,26 @@ def vuln_detail(vuln_id):
     
     # 渲染漏洞详情页面
     return render_template('cisa/vuln_detail.html', cisa_data=cisa_data)
+
+@cisa_bp.route('/sync_logs')
+def sync_logs():
+    """查看同步记录日志"""
+    # 获取分页参数
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    # 获取同步日志数据
+    pagination = CisaService.get_sync_logs(page=page, per_page=per_page)
+    total_count = CisaService.get_logs_count()
+    
+    # 可用的每页显示条数选项
+    per_page_options = [20, 30, 50, 100]
+    
+    return render_template(
+        'cisa/sync_logs.html',
+        logs=pagination.items,
+        pagination=pagination,
+        total_count=total_count,
+        per_page=per_page,
+        per_page_options=per_page_options
+    )
