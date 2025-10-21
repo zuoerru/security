@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">{{ cve.cve_id }}</h1>
+        <div>
+            <a href="{{ url_for('cve.cve_list') }}" class="btn btn-outline-secondary">
+                <span data-feather="arrow-left"></span> 返回列表
+            </a>
+        </div>
+    </div>
+
+    <!-- 基本信息卡片 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">基本信息</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <strong>发布日期:</strong> {{ cve.published_date.strftime('%Y-%m-%d %H:%M:%S') }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>更新日期:</strong> {{ cve.last_modified_date.strftime('%Y-%m-%d %H:%M:%S') if cve.last_modified_date else '-' }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>数据来源:</strong> {{ cve.source_identifier if cve.source_identifier else '-' }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <strong>严重级别:</strong>
+                        <span class="badge 
+                            {% if cve.base_severity == 'CRITICAL' %}bg-danger
+                            {% elif cve.base_severity == 'HIGH' %}bg-orange
+                            {% elif cve.base_severity == 'MEDIUM' %}bg-warning
+                            {% elif cve.base_severity == 'LOW' %}bg-info
+                            {% else %}bg-secondary
+                            {% endif %}">
+                            {{ cve.base_severity }}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>CVSS 评分:</strong> {{ cve.base_score if cve.base_score else '-' }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>CVSS 版本:</strong> {{ cve.cvss_version if cve.cvss_version else '-' }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <strong>攻击向量:</strong> {{ cve.attack_vector if cve.attack_vector else '-' }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>攻击复杂度:</strong> {{ cve.attack_complexity if cve.attack_complexity else '-' }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>权限要求:</strong> {{ cve.privileges_required if cve.privileges_required else '-' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 描述卡片 -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="card-title mb-0">漏洞描述</h5>
+        </div>
+        <div class="card-body">
+            <p class="card-text">{{ cve.description }}</p>
+        </div>
+    </div>
+
+    <!-- 影响组件卡片 -->
+    {% if cve.affected_components %}
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="card-title mb-0">影响组件</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>供应商</th>
+                            <th>产品</th>
+                            <th>版本</th>
+                            <th>受影响版本范围</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for component in cve.affected_components %}
+                        <tr>
+                            <td>{{ component.vendor }}</td>
+                            <td>{{ component.product }}</td>
+                            <td>{{ component.version }}</td>
+                            <td>{{ component.version_range if component.version_range else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 参考链接卡片 -->
+    {% if cve.references %}
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="card-title mb-0">参考链接</h5>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for reference in cve.references %}
+                <li class="list-group-item">
+                    <a href="{{ reference.url }}" target="_blank" rel="noopener noreferrer">{{ reference.url }}</a>
+                    {% if reference.tags %}
+                    <span class="text-muted ml-2">({{ reference.tags|join(', ') }})</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 缓解措施卡片 -->
+    {% if cve.mitigations %}
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="card-title mb-0">缓解措施</h5>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for mitigation in cve.mitigations %}
+                <li class="list-group-item">{{ mitigation }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 详细度量信息卡片 -->
+    {% if cve.cvss_data %}
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="card-title mb-0">CVSS 详细度量</h5>
+        </div>
+        <div class="card-body">
+            <pre>{{ cve.cvss_data }}</pre>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        // 页面加载完成后初始化图标
+        document.addEventListener('DOMContentLoaded', function() {
+            feather.replace();
+        });
+    </script>
+{% endblock %}

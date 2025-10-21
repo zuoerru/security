@@ -10,7 +10,7 @@ def create_app():
     app = Flask(__name__)
     
     # 配置数据库连接
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Xl123,56@192.168.233.121:3306/security'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Xl123,56@192.168.233.121:3306/security?charset=utf8mb4'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # 设置secret_key用于会话加密（flash消息需要）
@@ -24,7 +24,8 @@ def create_app():
         # 导入所有模型
         from app.cisa.models import CisaData
         from app.nvd.models import NvdData
-        
+        from app.cve.models import Cves, CvesLog
+    
         try:
             # 检查表是否存在，不存在则创建
             from sqlalchemy import inspect
@@ -39,6 +40,11 @@ def create_app():
             if not inspector.has_table('nvd'):
                 db.create_all()
                 print("NVD表创建成功")
+            
+            # 创建CVE表
+            if not inspector.has_table('cves') or not inspector.has_table('cveslogs'):
+                db.create_all()
+                print("CVE表创建成功")
                 
         except Exception as e:
             print(f"创建数据库表时出错: {str(e)}")
@@ -80,5 +86,12 @@ def create_app():
         start_nvd_scheduler(app)
     except Exception as e:
         print(f"启动NVD数据同步调度器时出错: {str(e)}")
+    
+    # 启动CVE数据同步调度器
+    try:
+        from app.cve.service import start_scheduler as start_cve_scheduler
+        start_cve_scheduler(app)
+    except Exception as e:
+        print(f"启动CVE数据同步调度器时出错: {str(e)}")
     
     return app

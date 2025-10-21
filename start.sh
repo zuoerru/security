@@ -17,6 +17,9 @@ source venv/bin/activate
 # 安装依赖（如果首次运行）
 pip install -r requirements.txt || echo "requirements.txt 不存在，跳过依赖安装"
 
+# 确保安装CVE模块所需的依赖
+pip install apscheduler requests
+
 # 启动Flask应用
 nohup python run.py > app.log 2>&1 &
 
@@ -25,3 +28,6 @@ echo "安全管理系统已启动在端口 8010"
 echo "日志文件: app.log"
 echo "可以通过 http://服务器IP:8010 访问系统"
 echo "CISA模块已配置定时任务，每6小时自动同步数据"
+echo "NVD模块已配置定时任务，每6小时自动同步数据"
+echo "CVE模块已配置定时任务，每3小时自动同步数据"
+echo "CVE模块提供全量数据同步、按时间段同步和日志查询功能"
