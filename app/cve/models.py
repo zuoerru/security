@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 class Cves(db.Model):
     __tablename__ = 'cves'
@@ -31,10 +31,12 @@ class CvesLog(db.Model):
     __tablename__ = 'cveslogs'
     
     id = db.Column(db.Integer, primary_key=True)
-    sync_time = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    sync_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     status = db.Column(db.String(20), nullable=False)  # success 或 failure
     message = db.Column(db.Text(collation='utf8mb4_unicode_ci'))
     affected_count = db.Column(db.Integer, default=0)  # 影响的记录数
+    insert_count = db.Column(db.Integer, default=0)  # 新增记录数
+    update_count = db.Column(db.Integer, default=0)  # 更新记录数
     sync_type = db.Column(db.String(20), default='manual')  # manual或auto，区分手动和自动同步
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
@@ -43,12 +45,24 @@ class CvesLog(db.Model):
         return f'<CvesLog {self.sync_time} - {self.status}>'
     
     def to_dict(self):
+        # 将UTC时间转换为中国时区（UTC+8）
+        china_timezone = timezone(timedelta(hours=8))
+        # 如果sync_time没有时区信息，先添加UTC时区
+        if self.sync_time.tzinfo is None:
+            sync_time_utc = self.sync_time.replace(tzinfo=timezone.utc)
+        else:
+            sync_time_utc = self.sync_time
+        # 转换到中国时区
+        sync_time_china = sync_time_utc.astimezone(china_timezone)
+        
         return {
             'id': self.id,
-            'sync_time': self.sync_time.strftime('%Y-%m-%d %H:%M:%S'),
+            'sync_time': sync_time_china.strftime('%Y-%m-%d %H:%M:%S'),
             'status': self.status,
             'message': self.message,
             'affected_count': self.affected_count,
+            'insert_count': self.insert_count,
+            'update_count': self.update_count,
             'sync_type': self.sync_type,
             'start_date': self.start_date.strftime('%Y-%m-%d') if self.start_date else None,
             'end_date': self.end_date.strftime('%Y-%m-%d') if self.end_date else None

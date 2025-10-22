@@ -54,11 +54,13 @@ def create_app():
     from app.cve.routes import cve_bp
     from app.nessus.routes import nessus_bp
     from app.nvd.routes import nvd_bp
+    from app.api.routes import api_bp
     
     app.register_blueprint(cisa_bp)
     app.register_blueprint(cve_bp)
     app.register_blueprint(nessus_bp)
     app.register_blueprint(nvd_bp)
+    app.register_blueprint(api_bp)
     
     # 主页路由
     @app.route('/')

@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, jsonify, request, current_app
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.cve.models import Cves, CvesLog
 from app.cve.service import cve_service
 import threading
@@ -12,15 +12,57 @@ logger = logging.getLogger('cve_routes')
 def cve_index():
     # 获取CVE统计信息
     total_cves = Cves.query.count()
-    recent_cves = Cves.query.order_by(Cves.published_date.desc()).limit(10).all()
     
-    # 获取最新的同步日志
+    # 获取分页数据用于表格显示
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    pagination = Cves.query.order_by(Cves.published_date.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    cves = pagination.items
+    
+    # 获取统计数据
+    critical_count = Cves.query.filter_by(base_severity='CRITICAL').count()
+    high_count = Cves.query.filter_by(base_severity='HIGH').count()
+    seven_days_ago = datetime.now() - timedelta(days=7)
+    recent_7_days = Cves.query.filter(Cves.published_date >= seven_days_ago).count()
+    
+    # 生成年份选项
+    current_year = datetime.now().year
+    years = range(1999, current_year + 1)[::-1]
+    
+    # 获取最新的同步日志信息
     latest_log = CvesLog.query.order_by(CvesLog.sync_time.desc()).first()
+    last_sync_time = None
+    if latest_log:
+        # 将UTC时间转换为中国时区（UTC+8）
+        china_timezone = timezone(timedelta(hours=8))
+        # 如果sync_time没有时区信息，先添加UTC时区
+        if latest_log.sync_time.tzinfo is None:
+            sync_time_utc = latest_log.sync_time.replace(tzinfo=timezone.utc)
+        else:
+            sync_time_utc = latest_log.sync_time
+        # 转换到中国时区
+        sync_time_china = sync_time_utc.astimezone(china_timezone)
+        last_sync_time = sync_time_china.strftime('%Y-%m-%d %H:%M:%S')
+    
+    last_sync_type = '全量' if latest_log and 'full' in latest_log.message.lower() else '增量'
+    last_sync_status = '成功' if latest_log and latest_log.status == 'success' else '失败'
+    last_sync_count = latest_log.affected_count if latest_log else 0
     
     return render_template('cve/index.html', 
                           total_cves=total_cves,
-                          recent_cves=recent_cves,
-                          latest_log=latest_log)
+                          cves=cves,
+                          pagination=pagination,
+                          years=years,
+                          today=datetime.now().strftime('%Y-%m-%d'),
+                          critical_count=critical_count,
+                          high_count=high_count,
+                          recent_7_days=recent_7_days,
+                          last_sync_time=last_sync_time,
+                          last_sync_type=last_sync_type,
+                          last_sync_status=last_sync_status,
+                          last_sync_count=last_sync_count)
 
 @cve_bp.route('/list')
 def cve_list():
